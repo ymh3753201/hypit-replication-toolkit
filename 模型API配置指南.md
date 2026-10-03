@@ -6,8 +6,8 @@
 
 | 用途 | 推荐模型 | 当前接入情况 |
 |---|---|---|
-| 参考视频复刻、人物表演、带声音视频 | MiniMax H3 | 包内官方适配器可用于受保护的 `replicate` 流程。仍需视频密钥、用户私有 OSS 和真实出片验收 |
-| 按参考动作/镜头生成 | Seedance 2.0 | 包内有 Seedance 语法和原苍远 SD14 连接；需用户服务/密钥/OSS。SD14 为 720p，现有流程去掉模型音轨。SD12 暂停 |
+| 参考视频复刻、人物表演、带声音视频 | MiniMax H3 | 包内官方适配器可用于受保护的 `replicate` 流程。仅需视频 API；本地素材默认直传，无需 OSS 或自建公网地址；真实出片另验收 |
+| 按参考动作/镜头生成 | Seedance 2.0 | 包内有 Seedance 语法和原苍远 SD14 连接；需用户服务和密钥；现有旧线路使用 OSS，新接入优先核对直传／模型文件接口。SD14 为 720p，现有流程去掉模型音轨。SD12 暂停 |
 | 较长叙事、多模态参考与视频编辑 | Seedance 2.5 | 运行引擎已有 2.5 模型语法；本包默认未启用 2.5 线路，`replicate` 不能直接执行。AI 按实际服务完成 Provider、规划与授权保护，验证后启用 |
 | 人物、商品、场景参考图片 | Seedream 5.0 系列 | 推荐按账号提供的 5.0 pro / flash / lite 等实际型号选择。运行引擎有 Seedream 组件，但不能把旧线路视为已兼容新型号；AI 对照服务 API 验证或补充接入 |
 | 图片生成与编辑 | GPT Image 2.5 | 推荐按实际可用 ID 选择，例如 `gpt-image-2.5-sunburst`、`gpt-image-2.5-flare`。运行引擎有 GPT Image 组件；实际 2.5 请求字段、输出处理和服务绑定需核对 |
@@ -40,9 +40,9 @@
 
 当前官方模型 ID：`MiniMax-H3`。生成语法为 `h3:TextVideo`、`h3:FrameVideo` 或 `h3:ReferenceVideo`。正式调用由 `replicate prepare/check` 生成受保护的 Runtime，并在实际 POST 前核对模型、素材、次数和金额。
 
-多媒体参考的上传依赖随包提供的 `hypit/packages/provider-cangyuan/runtime/oss_storage.py`，安装脚本配置 Python SDK。用户自己的 OSS 必填信息：`AI_DSP_OSS_ACCESS_KEY_ID`、`AI_DSP_OSS_ACCESS_KEY_SECRET`、`AI_DSP_OSS_BUCKET`、`AI_DSP_OSS_REGION`、`AI_DSP_OSS_ENDPOINT`。临时前缀和签名时间见 `.env.example`；生命周期由用户实际桶配置决定，变量本身不会创建删除规则。
+默认 `assetTransport=auto`：图片、MP4、WAV/MP3 以 Base64 直接传入官方请求；完整 JSON 超过 64MB 或 MOV 素材使用同一 MiniMax 账号的 `POST /v1/files/upload`（purpose=video_generation_input），引用 `mm_file://文件编号`。无需另注册 OSS 或配置公网地址。平台文件最长 7 天有效；明确结束后尝试清理，失败保留编号并报告。`inline` 仅直传、`platform` 使用平台文件、`oss` 仅为显式可选旧方案。
 
-AI 先用 doctor 只读核对；模型及 OSS 的实际费用另说明，不能为检测密钥而直接生成视频或上传素材。
+AI 先免费检查与运行 doctor；真实模型调用须另有预算授权。官方 H3 默认不检查 OSS。第三方接入用用户给定地址、密钥和文档，联网核对官方参数与限制；未证实兼容的部分先适配和测试，不猜字段、不转发第三方密钥到官方。优先本地直传或模型自带文件接口，仅无替代时才请求额外存储。
 
 ## 4. Seedance 的配置边界
 
@@ -66,7 +66,7 @@ AI 先用 doctor 只读核对；模型及 OSS 的实际费用另说明，不能�
 基础安装：通过 / 未通过（原因）
 视频模型与服务：实际名称、ID、端点
 视频 API：凭据已安全配置 / 缺失；免费检查结果
-OSS：用户自有桶与私有访问检查结果；不显示密钥或签名链接
+素材方式：本地直传 / 模型平台文件；官方 H3 无需 OSS。特殊线路另列依据
 图片方式：内置生图可调用 / API 已连接 / 仍需适配
 受保护复刻入口：可用模型、仍缺的功能
 付费请求：本次 0 次；首次真实测试待用户给出预算和次数
@@ -81,7 +81,8 @@ OSS：用户自有桶与私有访问检查结果；不显示密钥或签名链�
 - [Seedance 2.5 教程](https://docs.volcengine.com/docs/ark/seedance-2-5?lang=zh)
 - [Seedream 图片 API](https://docs.volcengine.com/docs/ark/image-generation-api?lang=zh)
 - [GPT Image 2.5 图像 API 指南](https://developers.openai.com/api/docs/guides/image-generation)
-- [MiniMax 官方平台](https://platform.minimax.cn/)
+- [MiniMax H3 请求与素材格式](https://platform.minimax.cn/docs/api-reference/video-generation-v2-create)
+- [MiniMax 模型文件上传](https://platform.minimax.cn/docs/api-reference/file-management-upload)
 - [Codex 内置图片能力](https://learn.chatgpt.com/docs/image-generation)
 
 官方接口与第三方平台可用性是两件事；以用户账号和所选平台的文档、实际测试为准。
