@@ -3,3 +3,7 @@
 .env*
 node_modules/
 .DS_Store
+
+.skill-backups/
+__pycache__/
+*.pyc
