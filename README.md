@@ -8,7 +8,7 @@
 
 下载 ZIP → 完整解压 → 在 Codex 或 Claude Code 中打开目录 → 把 [学员安装提示词](学员一键安装提示词.md) 发给 AI → 提供自己的视频/图片 API 信息 → 让 AI 安装、配置并审查。
 
-请下载 Release 中名称包含“学员版”的 ZIP；页面上的 **Source code** 仅含本仓库文档，不是完整工具。
+请下载 Release 中`hypit-video-agent-students-v0.1.1-20261003.zip`；页面上的 **Source code** 仅含本仓库文档，不是完整工具。
 
 ## 工具能力
 
