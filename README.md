@@ -7,6 +7,7 @@
 1. 克隆本仓库，或下载 Release 中的 `hypit-replication-toolkit-v0.1.4-20261004.zip` 并完整解压。
 2. 在 Codex 或 Claude Code 中打开项目目录，发送 [一键安装提示词](一键安装提示词.md)，按 [安装部署指南](安装部署操作指南.md) 安装依赖。
 3. 提供自己的视频模型账户及任务素材。真实生图或视频生成须先确定本次预算。
+4. 复制 [复刻视频通用提示词](复刻视频通用提示词.md)，让 AI 先核对模型声音能力，同一生成片段一次生成画面和声音。
 
 项目入口为 `./bin/hypit` 和 `./bin/replicate`；完整 Hypit Skill 在 `.agents/skills/hypit/` 和 `.claude/skills/hypit/`。源码位于 `hypit/` 与 `packages/`，运行指南见 [工具使用说明](工具使用说明.md)。默认受保护复刻流程使用 MiniMax 官方 H3；其他模型按实际接口适配与验证。
 
