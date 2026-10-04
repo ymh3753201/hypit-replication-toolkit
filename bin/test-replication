@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+PROJECT_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+PROJECT_NODE="$PROJECT_ROOT/.toolchain/node-v24.14.1/bin/node"
+export PATH="$PROJECT_ROOT/.toolchain/node-v24.14.1/bin:$PATH"
+cd "$PROJECT_ROOT"
+# A dummy key only satisfies planning preflight. All submissions in tests are mocked.
+export MINIMAX_API_KEY=OFFLINE-MOCK-NOT-A-REAL-KEY
+# All HTTP in these tests is mocked or localhost; no live generation or OSS upload.
+"$PROJECT_NODE" --test packages/replication-workflow/test/*.test.mjs
+cd "$PROJECT_ROOT/hypit"
+"$PROJECT_NODE" --import tsx --test packages/provider-minimax-official/test/provider.test.ts packages/provider-minimax-official/test/submission-policy.test.mjs packages/provider-cangyuan/test/*.test.ts
+python3 -m unittest discover -s packages/provider-cangyuan/test -p test_oss_storage.py -v
+"$PROJECT_NODE" node_modules/typescript/bin/tsc -p tsconfig.json --noEmit

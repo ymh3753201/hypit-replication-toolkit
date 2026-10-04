@@ -1,9 +1,87 @@
-*.zip
-*.sha256
-.env*
-node_modules/
+# macOS / editors
 .DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Secrets and machine-local configuration
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+*credentials*.json
+*service-account*.json
+
+# Local runtimes, caches and generated output
+.hypit/
+.toolchain/
+.trash/
+outputs/
+node_modules/
+dist/
+coverage/
+*.log
+*.tmp
+*.temp
+*.db
+*.sqlite*
+__pycache__/
+*.py[cod]
+.venv/
+*.private.json
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.patch
+
+# hypit/ is an independent Git repository that follows the public upstream.
+# Never vendor its .git directory or source history into this workspace repo.
+
+# Production folders keep editable recipes and notes, not source media or renders.
+productions/**
+!productions/*/
+!productions/*/*.md
+!productions/*/*.json
+!productions/*/*.svml
+!productions/*/*.svrun
+!productions/*/*.svs
+!productions/*/*.py
+!productions/*/*.swift
+productions/*/*transcript*.json
+
+# Large or generated media is stored outside Git.
+*.mp4
+*.mov
+*.mkv
+*.avi
+*.webm
+*.wav
+*.mp3
+*.m4a
+*.aac
+*.aiff
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+
+# New business records include private prompts, paths, fingerprints and spending evidence.
+.replication/
+productions/*/task.json
+productions/*/review-checks*.json
+productions/*/layout*.json
+*.private.json
+*credentials*.json
+*service-account*.json
 
 .skill-backups/
 __pycache__/
 *.pyc
+
+# A developer may link an existing local toolchain.
+/.toolchain

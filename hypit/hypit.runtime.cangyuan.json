@@ -1,0 +1,61 @@
+{
+  "format": "hypit.runtime-local@1",
+  "dataRoot": ".hypit/runtimes/share",
+  "credentials": {
+    "env": {
+      "use": "@hypit/credential-store-env",
+      "config": {}
+    }
+  },
+  "endpoints": {
+    "minimax.official": {
+      "use": "@hypit/provider-minimax-official",
+      "pool": "minimax.official",
+      "config": {
+        "baseUrl": "https://api.minimax.cn",
+        "apiKey": {
+          "store": "env",
+          "key": "MINIMAX_API_KEY"
+        },
+        "defaultConcurrency": 1,
+        "pollIntervalMs": 10000,
+        "requestTimeoutMs": 300000,
+        "operationTimeoutMs": 1800000,
+        "assetTransport": "auto"
+      }
+    },
+    "media.local": {
+      "use": "@hypit/provider-media-local",
+      "config": {
+        "defaultConcurrency": 2
+      }
+    },
+    "hyperframes.local": {
+      "use": "@hypit/provider-hyperframes-local",
+      "pool": "local-render",
+      "config": {
+        "workers": 2,
+        "defaultConcurrency": 1,
+        "browserCapacity": 2
+      }
+    },
+    "whisperx.local": {
+      "use": "@hypit/provider-whisperx-local",
+      "config": {
+        "baseUrl": "http://127.0.0.1:8765",
+        "expectedModel": "small",
+        "expectedDevice": "cpu",
+        "expectedCompute": "int8",
+        "alignmentLanguages": [
+          "zh",
+          "en"
+        ],
+        "modelCacheDirectory": "models/whisperx"
+      }
+    }
+  },
+  "bindings": {
+    "@hypit/minimax-h3@1#minimax-h3": "minimax.official",
+    "@hypit/whisperx@1#whisperx-alignment": "whisperx.local"
+  }
+}

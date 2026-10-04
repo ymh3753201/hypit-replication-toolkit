@@ -1,0 +1,62 @@
+{
+  "format": "hypit.runtime-local@1",
+  "dataRoot": ".hypit/runtimes/share",
+  "credentials": {
+    "env": {
+      "use": "@hypit/credential-store-env",
+      "config": {}
+    }
+  },
+  "endpoints": {
+    "media.local": {
+      "use": "@hypit/provider-media-local",
+      "config": {
+        "defaultConcurrency": 2
+      }
+    },
+    "hyperframes.local": {
+      "use": "@hypit/provider-hyperframes-local",
+      "pool": "local-render",
+      "config": {
+        "workers": 2,
+        "defaultConcurrency": 1,
+        "browserCapacity": 2
+      }
+    },
+    "whisperx.local": {
+      "use": "@hypit/provider-whisperx-local",
+      "config": {
+        "baseUrl": "http://127.0.0.1:8765",
+        "expectedModel": "small",
+        "expectedDevice": "cpu",
+        "expectedCompute": "int8",
+        "alignmentLanguages": [
+          "zh",
+          "en"
+        ],
+        "modelCacheDirectory": "models/whisperx"
+      }
+    },
+    "cangyuan.default": {
+      "use": "@hypit/provider-cangyuan",
+      "pool": "cangyuan.default",
+      "config": {
+        "baseUrl": "https://configure-your-provider.example",
+        "apiKey": {
+          "store": "env",
+          "key": "CANGYUAN_API_KEY"
+        },
+        "primaryModel": "sd14-seedance-2.0",
+        "fallbackModels": [],
+        "disabledModels": [
+          "sd12-seedance-2.0"
+        ],
+        "defaultConcurrency": 1
+      }
+    }
+  },
+  "bindings": {
+    "@hypit/whisperx@1#whisperx-alignment": "whisperx.local",
+    "@hypit/seedance@1#seedance-2": "cangyuan.default"
+  }
+}

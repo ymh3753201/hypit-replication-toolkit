@@ -1,0 +1,1 @@
+{"name":"@replication/workflow","version":"0.1.1","private":true,"type":"module","exports":{".":"./src/plan.mjs","./policy":"./src/policy.mjs"},"scripts":{"test":"node --test test/*.test.mjs"},"engines":{"node":">=24"}}

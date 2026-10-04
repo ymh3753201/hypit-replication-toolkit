@@ -1,0 +1,7 @@
+{
+  "width": 768,
+  "height": 1366,
+  "regions": {"pip-host": [65, 60, 95, 95]},
+  "cards": [{"assetId": "goods", "width": 320, "height": 320, "start": 0, "end": 5, "box": [3, 3, 30, 30], "reviewedNoOldSubjectBy": "填写已检查卡片没有旧人物的审阅人"}],
+  "captions": []
+}
