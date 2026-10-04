@@ -1,0 +1,19 @@
+* text=auto eol=lf
+
+*.md text eol=lf
+*.json text eol=lf
+*.svml text eol=lf
+*.svrun text eol=lf
+*.svs text eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.swift text eol=lf
+
+*.mp4 binary
+*.mov binary
+*.wav binary
+*.mp3 binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary

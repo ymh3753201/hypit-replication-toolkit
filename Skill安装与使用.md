@@ -2,10 +2,10 @@
 
 Skill 是给 AI 的制作说明。完整安装需要技能、工具程序和用户自己的 API；只复制 SKILL.md 不够。
 
-## 零基础学员：推荐这样做
+## 零基础用户：推荐这样做
 
-1. 从[本项目完整工具包下载页](https://github.com/ymh3753201/hypit-video-agent-students/releases/latest)下载学员工具包 ZIP，完整解压。
-2. 在能操作文件和终端的 Codex 或 Claude Code 中打开工具包根目录，把 `学员一键安装提示词.md` 发给 AI。
+1. 从[本项目完整工具包下载页](https://github.com/ymh3753201/hypit-replication-toolkit/releases/latest)下载用户工具包 ZIP，完整解压。
+2. 在能操作文件和终端的 Codex 或 Claude Code 中打开工具包根目录，把 `一键安装提示词.md` 发给 AI。
 3. AI 先安装／检查完整技能，再补齐程序依赖、配置 API 和检查本地渲染。官方 H3 默认无需 OSS。
 4. 技能文件已就绪后，在下一轮选择 hypit。Codex 可输入 `$hypit`，Claude Code 可输入 `/hypit`；不识别时重新打开项目，让 AI 确认来源路径。
 

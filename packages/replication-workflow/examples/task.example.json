@@ -1,0 +1,31 @@
+{
+  "format": "replication.task@1",
+  "id": "new-sales-video",
+  "revision": 1,
+  "brief": "Brief.md",
+  "analysis": {"file": "analysis.md", "reviewer": "", "regionsComplete": false, "requirementsReviewed": false},
+  "ratio": "9:16",
+  "resolution": "768P",
+  "audio": {"mode": "voice_reference", "assetId": "voice", "description": "只参考音色，按 Script.txt 重新说话", "lipsyncRequired": true},
+  "assets": [
+    {"id": "actor", "kind": "image", "file": "person.png", "subject": "host", "purposes": ["identity"], "description": "只决定新主持人的脸和发型；不带入图中的背景"},
+    {"id": "goods", "kind": "image", "file": "product.png", "subject": "product", "purposes": ["product"], "description": "决定商品款式、颜色、标志；必须逐项核对"},
+    {"id": "source", "kind": "video", "file": "segment-1.mp4", "subject": "old-host", "purposes": ["motion"], "description": "只保留动作和机位，替换旧人物身份"},
+    {"id": "voice", "kind": "audio", "file": "voice.wav", "subject": "host", "purposes": ["voice"], "description": "决定新主持人的音色；样本台词不进入成片"}
+  ],
+  "requirements": [
+    {"id": "actor", "kind": "person", "operation": "replace", "subject": "host", "attribute": "identity", "description": "全屏和小窗均为新人物", "basis": "填写用户的实际要求", "referenceIds": ["actor"]},
+    {"id": "goods", "kind": "product", "operation": "replace", "subject": "product", "description": "替换为提供的准确商品", "basis": "填写用户的实际要求", "referenceIds": ["goods"]},
+    {"id": "action", "kind": "action", "operation": "preserve", "subject": "host", "exact": true, "description": "保留原片指定动作和镜头", "basis": "填写具体时间范围和原话", "referenceIds": ["source"]},
+    {"id": "voice", "kind": "voice", "operation": "replace", "subject": "host", "description": "参考指定音色生成新口播", "basis": "填写用户的实际要求", "referenceIds": ["voice"]},
+    {"id": "script", "kind": "dialogue", "operation": "change", "subject": "host", "description": "逐字使用 Script.txt，不借用参考音频台词", "basis": "填写用户的实际要求"}
+  ],
+  "segments": [{"id": "s1", "strategy": "direct_edit", "duration": 5, "direction": "填写表演、商品交互、镜头和声音安排", "referenceIds": ["actor", "goods", "source", "voice"], "requirementIds": ["actor", "goods", "action", "voice", "script"], "script": "Script.txt"}],
+  "occurrences": [
+    {"id": "full-host", "subject": "host", "segmentId": "s1", "slot": "full", "start": 0, "end": 5, "source": "generated"},
+    {"id": "pip-host", "subject": "host", "segmentId": "s1", "slot": "pip", "start": 1, "end": 4, "source": "generated"},
+    {"id": "goods-area", "subject": "product", "segmentId": "s1", "slot": "product", "start": 0, "end": 5, "source": "generated"}
+  ],
+  "authorization": {"id": "replace-with-approved-grant-id", "taskIds": ["new-sales-video"], "service": "minimax.official", "model": "MiniMax-H3", "maxRequests": 0, "maxCostCny": 0, "approvedBy": "", "basis": "", "approvedAt": ""},
+  "pricing": {"model": "MiniMax-H3", "resolution": "768P", "outputCnyPerSecond": 0.5, "videoCnyPerSecond": 0.5, "extraImageCny": 0.2, "checkedAt": "2026-09-30", "source": "https://platform.minimax.cn/docs/guides/pricing-paygo"}
+}

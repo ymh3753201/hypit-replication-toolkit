@@ -1,0 +1,26 @@
+#!/bin/sh
+set -eu
+PROJECT_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$PROJECT_ROOT"
+# Recipient-owned local credentials, never shipped with the package.
+if [ -f "$PROJECT_ROOT/.env.local" ]; then
+  set -a
+  . "$PROJECT_ROOT/.env.local"
+  set +a
+fi
+PROJECT_NODE="$PROJECT_ROOT/.toolchain/node-v24.14.1/bin/node"
+if [ ! -x "$PROJECT_NODE" ]; then
+  echo "Project Node.js 24.14.1 is missing: $PROJECT_NODE" >&2
+  exit 1
+fi
+export PATH="$PROJECT_ROOT/.toolchain/node-v24.14.1/bin:$PATH"
+if [ "${1:-}" = "replicate" ]; then
+  shift
+  exec "$PROJECT_NODE" "$PROJECT_ROOT/packages/replication-workflow/src/cli.mjs" "$@"
+fi
+# New task records must use the guarded business entry, including ordinary build calls.
+if [ "${1:-}" = "build" ] && [ -n "${2:-}" ] && [ -f "$(dirname -- "$2")/task.json" ]; then
+  echo '该新复刻任务必须先 prepare/check，再使用 ./bin/replicate build task.json --submit。' >&2
+  exit 1
+fi
+exec "$PROJECT_NODE" "$PROJECT_ROOT/hypit/bin/hypit.mjs" "$@"

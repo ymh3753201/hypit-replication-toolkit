@@ -1,0 +1,98 @@
+--- original/packages/replication-workflow/src/plan.mjs
++++ share/packages/replication-workflow/src/plan.mjs
+@@ -205,8 +205,11 @@
+         check(!previous.segments.some(s => ledger.intents[s.intentId]) || t.revision > previous.task.revision, '已提交的任务版本发生变化；须明确增加 revision 并核对新调用授权，不能无声重投');
+     }
+     const plan = { format: 'replication.plan@1', taskPath, task: t, planHash, inputs, implementation, segments, requestCount, totalCostCents, warnings, ledgerRoot: root, preparedAt: new Date().toISOString(), status: 'ready' };
+-    const revision = async (path) => (await run('git', ['-C', path, 'rev-parse', 'HEAD'])).stdout.trim();
+-    plan.compatibility = { workflowVersion: '0.1.1', workspaceCommit: await revision(projectRoot), hypitCommit: await revision(join(projectRoot, 'hypit')), upstreamCommit: (await run('git', ['-C', join(projectRoot, 'hypit'), 'rev-parse', 'upstream/main'])).stdout.trim(), implementationFiles: implementation };
++    // Source distributions keep provenance in a manifest; do not require private Git history.
++    const distribution = await readJson(join(projectRoot, 'DISTRIBUTION.json'));
++    for (const field of ['workspaceCommit', 'hypitCommit', 'upstreamCommit'])
++        check(/^[a-f0-9]{40}$/u.test(distribution[field]), '安装包版本来源记录无效');
++    plan.compatibility = { workflowVersion: '0.1.1', workspaceCommit: distribution.workspaceCommit, hypitCommit: distribution.hypitCommit, upstreamCommit: distribution.upstreamCommit, sourceDistribution: true, implementationFiles: implementation };
+     const template = options.runtimeTemplate ?? await readJson(join(projectRoot, 'hypit', 'hypit.runtime.cangyuan.json'));
+     plan.files = [];
+     for (const s of segments) {
+--- original/hypit/packages/provider-cangyuan/runtime/oss_storage.py
++++ share/hypit/packages/provider-cangyuan/runtime/oss_storage.py
+@@ -27,7 +27,7 @@
+ 
+ DEFAULT_OSS_REGION = "cn-shenzhen"
+ DEFAULT_OSS_ENDPOINT = "https://oss-cn-shenzhen.aliyuncs.com"
+-DEFAULT_OSS_BUCKET = "yunshudong-ai-video-temp"
++DEFAULT_OSS_BUCKET = ""  # Distribution: require the recipient's own bucket.
+ DEFAULT_OSS_PREFIX = "ai-dsp-temp"
+ DEFAULT_OSS_URL_TTL_SECONDS = 6 * 60 * 60
+ MAX_OSS_URL_TTL_SECONDS = 7 * 24 * 60 * 60
+--- original/hypit/packages/provider-minimax-official/test/provider.test.ts
++++ share/hypit/packages/provider-minimax-official/test/provider.test.ts
+@@ -91,11 +91,17 @@
+   if (support.status === "unsupported") assert.match(support.reason, /画幅/u);
+ });
+ 
+-test("real reference video and character image pass preflight into one official request", async () => {
++test("synthetic reference video and image pass preflight into one mocked official request", async () => {
+   const resources = new MemoryResourceStore();
+-  const fixture = new URL("../../../../productions/minimax-official-check-20260929/", import.meta.url);
+-  const video = await resources.put(new Uint8Array(await readFile(new URL("reference.mp4", fixture))), "video/mp4");
+-  const image = await resources.put(new Uint8Array(await readFile(new URL("replacement.png", fixture))), "image/png");
++  // Distributions have no private production assets. Generate valid local test media instead.
++  const fixture = await mkdtemp(join(tmpdir(), "hypit-official-reference-"));
++  let video: BlobRef; let image: BlobRef;
++  try {
++    execFileSync("ffmpeg", ["-v", "error", "-f", "lavfi", "-i", "color=c=blue:s=768x768:r=24:d=4", "-c:v", "libx264", "-pix_fmt", "yuv420p", join(fixture, "reference.mp4")]);
++    execFileSync("ffmpeg", ["-v", "error", "-f", "lavfi", "-i", "color=c=green:s=768x768", "-frames:v", "1", join(fixture, "replacement.png")]);
++    video = await resources.put(new Uint8Array(await readFile(join(fixture, "reference.mp4"))), "video/mp4");
++    image = await resources.put(new Uint8Array(await readFile(join(fixture, "replacement.png"))), "image/png");
++  } finally { await rm(fixture, { recursive: true, force: true }); }
+   const request = sealMinimaxH3Request({ prompt: ["Replace the subject while keeping the reference motion."], duration: [4], resolution: ["768P"], aspectRatio: ["1:1"], referenceVideo: [{ role: "video", artifact: video }], referenceImage: [{ role: "image", artifact: image }] });
+   const n = need(request);
+   let calls = 0; let body: Record<string, unknown> = {};
+--- original/packages/replication-workflow/test/workflow.test.mjs
++++ share/packages/replication-workflow/test/workflow.test.mjs
+@@ -229,7 +229,8 @@
+     const f = await fixture();
+     const p = await f.prepare();
+     await mockAcceptedModel(f, p);
+-    await copyFile('/System/Library/Fonts/Supplemental/Arial.ttf', join(f.dir, 'font.ttf'));
++    const font = process.env.HYPIT_TEST_FONT_PATH ?? (process.platform === 'darwin' ? '/System/Library/Fonts/Supplemental/Arial.ttf' : '/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf');
++    await copyFile(font, join(f.dir, 'font.ttf'));
+     const c = await compose(p, { width: 768, height: 768, regions: { 'pip-host': [65, 60, 95, 95] }, cards: [{ assetId: 'product', width: 320, height: 320, start: 0, end: 5, box: [3, 3, 30, 30], reviewedNoOldSubjectBy: 'OFFLINE fixture' }], fontFile: 'font.ttf', captions: [{ text: 'OFFLINE TEST - NO MODEL QUALITY CLAIM', start: 0, end: 5 }] });
+     try {
+         await hypit(['check', c.run]);
+--- original/bin/hypit
++++ share/bin/hypit
+@@ -2,6 +2,12 @@
+ set -eu
+ PROJECT_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+ cd "$PROJECT_ROOT"
++# Recipient-owned local credentials, never shipped with the package.
++if [ -f "$PROJECT_ROOT/.env.local" ]; then
++  set -a
++  . "$PROJECT_ROOT/.env.local"
++  set +a
++fi
+ PROJECT_NODE="$PROJECT_ROOT/.toolchain/node-v24.14.1/bin/node"
+ if [ ! -x "$PROJECT_NODE" ]; then
+   echo "Project Node.js 24.14.1 is missing: $PROJECT_NODE" >&2
+--- original/bin/replicate
++++ share/bin/replicate
+@@ -1,5 +1,4 @@
+ #!/bin/sh
+ set -eu
+ PROJECT_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+-export PATH="$PROJECT_ROOT/.toolchain/node-v24.14.1/bin:$PATH"
+-exec "$PROJECT_ROOT/.toolchain/node-v24.14.1/bin/node" "$PROJECT_ROOT/packages/replication-workflow/src/cli.mjs" "$@"
++exec "$PROJECT_ROOT/bin/hypit" replicate "$@"
+--- original/bin/test-replication
++++ share/bin/test-replication
+@@ -4,6 +4,8 @@
+ PROJECT_NODE="$PROJECT_ROOT/.toolchain/node-v24.14.1/bin/node"
+ export PATH="$PROJECT_ROOT/.toolchain/node-v24.14.1/bin:$PATH"
+ cd "$PROJECT_ROOT"
++# A dummy key only satisfies planning preflight. All submissions in tests are mocked.
++export MINIMAX_API_KEY=OFFLINE-MOCK-NOT-A-REAL-KEY
+ # All HTTP in these tests is mocked or localhost; no live generation or OSS upload.
+ "$PROJECT_NODE" --test packages/replication-workflow/test/*.test.mjs
+ cd "$PROJECT_ROOT/hypit"

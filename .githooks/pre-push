@@ -1,0 +1,38 @@
+#!/bin/sh
+# Local guard for both repositories. Install as described in docs/GIT工作流.md.
+set -eu
+
+remote_name=${1:-}
+remote_url=${2:-}
+case "$remote_name:$remote_url" in
+  upstream:*|*github.com/hypit-ai/hypit*|*github.com:hypit-ai/hypit*)
+    printf '%s\n' '禁止向官方 upstream 推送；请使用自己的 origin。' >&2
+    exit 1
+    ;;
+esac
+
+zero_oid=0000000000000000000000000000000000000000
+while read -r local_ref local_oid remote_ref remote_oid; do
+  case "$remote_ref" in
+    refs/heads/main|refs/heads/develop)
+      if [ "$local_oid" = "$zero_oid" ]; then
+        printf '%s\n' '禁止删除 main 或 develop。' >&2
+        exit 1
+      fi
+      if [ "$remote_oid" != "$zero_oid" ]; then
+        if ! git cat-file -e "$remote_oid^{commit}" 2>/dev/null; then
+          printf '%s\n' '请先 git fetch origin --prune，再核对长期分支的历史。' >&2
+          exit 1
+        fi
+        if ! git merge-base --is-ancestor "$remote_oid" "$local_oid"; then
+          printf '%s\n' '禁止改写 main 或 develop 的远程历史。' >&2
+          exit 1
+        fi
+      fi
+      if [ "$remote_ref" = refs/heads/main ] && [ "${HYPIT_ALLOW_MAIN_PUSH:-0}" != 1 ]; then
+        printf '%s\n' 'main 是稳定分支。请通过发布合并请求更新；已授权且验收的本地发布可按 Git 工作流执行。' >&2
+        exit 1
+      fi
+      ;;
+  esac
+done
