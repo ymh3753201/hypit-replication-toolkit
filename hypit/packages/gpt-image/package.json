@@ -1,6 +1,6 @@
 {
   "name": "@hypit/gpt-image",
-  "version": "0.0.0-dev",
+  "version": "0.2.0",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "type": "module",
@@ -10,25 +10,33 @@
   "hypit": {
     "activation": "./src/activation.ts"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "dependencies": {
-    "@hypit/artifact": "workspace:*",
-    "@hypit/elaborator": "workspace:*",
-    "@hypit/generation": "workspace:*",
-    "@hypit/image-transform": "workspace:*",
-    "@hypit/markup": "workspace:*",
-    "@hypit/model-kit": "workspace:*",
-    "@hypit/protocol": "workspace:*",
-    "@hypit/text": "workspace:*"
+    "@hypit/generation": "workspace:^0.1.0",
+    "@hypit/image-operations": "workspace:^0.2.0"
+  },
+  "peerDependencies": {
+    "@hypit/hypit": "workspace:^0.3.1"
   },
   "devDependencies": {
-    "@hypit/core": "workspace:*",
+    "@hypit/blob": "workspace:*",
+    "@hypit/kernel": "workspace:*",
+    "@hypit/author": "workspace:*",
+    "@hypit/generation": "workspace:*",
+    "@hypit/hypit": "workspace:*",
+    "@hypit/markup": "workspace:*",
     "@hypit/media": "workspace:*",
     "@hypit/narrative": "workspace:*",
-    "@hypit/program-space": "workspace:*",
-    "@hypit/raster": "workspace:*",
+    "@hypit/protocol": "workspace:*",
     "@hypit/run": "workspace:*",
     "@hypit/seedance": "workspace:*",
     "@hypit/spatial": "workspace:*",
-    "@hypit/speech": "workspace:*"
+    "@hypit/recipe": "workspace:*",
+    "@hypit/temporal": "workspace:*",
+    "@hypit/text": "workspace:*",
+    "@hypit/timeline": "workspace:*"
   }
 }

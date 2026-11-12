@@ -170,7 +170,7 @@ export async function prepare(taskPath, options = {}) {
     await track(taskPath);
     await track(t.brief);
     await track(t.analysis.file);
-    const implementationFiles = ['packages/replication-workflow/src/common.mjs', 'packages/replication-workflow/src/plan.mjs', 'packages/replication-workflow/src/policy.mjs', 'packages/replication-workflow/src/ledger.mjs', 'packages/replication-workflow/src/review.mjs', 'packages/replication-workflow/src/cli.mjs', 'packages/replication-workflow/src/media.mjs', 'packages/replication-scenes/src/scene.mjs', 'packages/h3-replication-kits/src/prompt.mjs', 'hypit/packages/provider-minimax-official/src/provider.ts', 'hypit/packages/provider-minimax-official/src/activation.ts', 'hypit/packages/provider-minimax-official/src/route.ts', 'hypit/packages/provider-minimax-official/src/assets.ts', 'hypit/packages/provider-minimax-official/src/media.ts'];
+    const implementationFiles = ['hypit/package.json', 'hypit/pnpm-lock.yaml', 'hypit/bin/hypit.mjs', 'packages/replication-workflow/src/common.mjs', 'packages/replication-workflow/src/plan.mjs', 'packages/replication-workflow/src/policy.mjs', 'packages/replication-workflow/src/ledger.mjs', 'packages/replication-workflow/src/review.mjs', 'packages/replication-workflow/src/cli.mjs', 'packages/replication-workflow/src/media.mjs', 'packages/replication-scenes/src/scene.mjs', 'packages/h3-replication-kits/src/prompt.mjs', 'hypit/packages/provider-minimax-official/src/provider.ts', 'hypit/packages/provider-minimax-official/src/activation.ts', 'hypit/packages/provider-minimax-official/src/route.ts', 'hypit/packages/provider-minimax-official/src/assets.ts', 'hypit/packages/provider-minimax-official/src/media.ts'];
     const implementation = await Promise.all(implementationFiles.map(async f => ({ file: join(projectRoot, f), sha256: await hashFile(join(projectRoot, f)) })));
     const assets = [];
     for (const a of t.assets) {
@@ -233,7 +233,20 @@ export async function prepare(taskPath, options = {}) {
     const distribution = await readJson(join(projectRoot, 'DISTRIBUTION.json'));
     for (const field of ['workspaceCommit', 'hypitCommit', 'upstreamCommit'])
         check(/^[a-f0-9]{40}$/u.test(distribution[field]), '安装包版本来源记录无效');
-    plan.compatibility = { workflowVersion: distribution.workflowVersion ?? '0.1.1', workspaceCommit: distribution.workspaceCommit, hypitCommit: distribution.hypitCommit, upstreamCommit: distribution.upstreamCommit, sourceDistribution: true, implementationFiles: implementation };
+    const provenance = { workspaceCommit: distribution.workspaceCommit, hypitCommit: distribution.hypitCommit, upstreamCommit: distribution.upstreamCommit, sourceDistribution: true };
+    const commits = await Promise.allSettled([projectRoot, join(projectRoot, 'hypit')].map(cwd => run('git', ['rev-parse', '--show-prefix', 'HEAD'], { cwd, timeout: 10000 })));
+    // A public distribution tracks hypit/ inside its parent repository. Only two
+    // independent repository roots can replace the recorded source commits.
+    const repositoryCommits = commits.map(result => {
+        if (result.status !== 'fulfilled') return undefined;
+        return /^\r?\n([a-f0-9]{40})\r?\n$/u.exec(result.value.stdout)?.[1];
+    });
+    if (repositoryCommits.every(commit => commit !== undefined)) {
+        provenance.workspaceCommit = repositoryCommits[0];
+        provenance.hypitCommit = repositoryCommits[1];
+        provenance.sourceDistribution = false;
+    }
+    plan.compatibility = { workflowVersion: distribution.workflowVersion ?? '0.1.1', ...provenance, implementationFiles: implementation };
     const template = options.runtimeTemplate ?? await readJson(join(projectRoot, 'hypit', 'hypit.runtime.cangyuan.json'));
     plan.files = [];
     for (const s of segments) {
@@ -244,7 +257,7 @@ export async function prepare(taskPath, options = {}) {
         if (s.strategy === 'reuse')
             continue;
         await writeFile(s.source, generationSource(t, s, s.references, s.prompt), { mode: 0o600 });
-        await writeFile(s.run, `<?svml using="@hypit/run-markup@1"?>\n<svrun version="1"><author source="./${s.id}.svml"/><target output="replacement.video"/></svrun>\n`, { mode: 0o600 });
+        await writeFile(s.run, `<?svml using="@hypit/markup/run@1"?>\n<svrun version="1"><author source="./${s.id}.svml"/><target output="replacement.video"/></svrun>\n`, { mode: 0o600 });
         const official = structuredClone(template.endpoints['minimax.official']);
         Object.assign(official.config, { submissionPolicyModule: join(projectRoot, 'packages/replication-workflow/src/policy.mjs'), submissionPlan: join(out, 'plan.json'), submissionLedgerRoot: root });
         const profile = { format: template.format, dataRoot: join(projectRoot, '.hypit', 'runtimes', 'replication', planHash, s.id), credentials: template.credentials, endpoints: { 'minimax.official': official, 'media.local': template.endpoints['media.local'], 'hyperframes.local': template.endpoints['hyperframes.local'] }, bindings: { '@hypit/minimax-h3@1#minimax-h3': 'minimax.official' } };

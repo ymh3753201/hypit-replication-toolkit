@@ -1,6 +1,6 @@
 {
   "name": "@hypit/caption",
-  "version": "0.0.0-dev",
+  "version": "0.1.0",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "type": "module",
@@ -11,19 +11,20 @@
     "activation": "./src/activation.ts"
   },
   "dependencies": {
-    "@hypit/component-kit": "workspace:*",
-    "@hypit/elaborator": "workspace:*",
-    "@hypit/narrative": "workspace:*",
-    "@hypit/protocol": "workspace:*",
-    "@hypit/timeline": "workspace:*",
-    "@hypit/markup": "workspace:*",
-    "@hypit/temporal": "workspace:*"
+    "@hypit/temporal": "workspace:^0.1.0"
   },
   "devDependencies": {
-    "@hypit/program-space": "workspace:*",
-    "@hypit/script": "workspace:*",
-    "@hypit/speech": "workspace:*",
-    "@hypit/speech-alignment": "workspace:*",
-    "@hypit/speech-evidence": "workspace:*"
+    "@hypit/producer": "workspace:*",
+    "@hypit/protocol": "workspace:*",
+    "@hypit/markup": "workspace:*",
+    "@hypit/admission": "workspace:*",
+    "@hypit/hypit": "workspace:*"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "@hypit/hypit": "workspace:^0.3.1"
   }
 }

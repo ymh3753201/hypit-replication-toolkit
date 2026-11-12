@@ -1,11 +1,11 @@
-import { requestDeadline } from "@hypit/runtime-kit";
-import type { AsyncEndpoint, EndpointCredential, EndpointOutcome } from "@hypit/endpoint-kit";
-import { defineEndpointPackage, wakeAfter } from "@hypit/endpoint-kit";
+import { withRequestDeadline } from "@hypit/hypit/endpoint/http";
+import type { AsyncEndpoint, EndpointCredential, EndpointOutcome } from "@hypit/hypit/endpoint";
+import { defineEndpoint, wakeAfter } from "@hypit/hypit/endpoint";
 import type { GenerationRequest } from "@hypit/generation";
-import { canonicalize } from "@hypit/protocol";
-import type { BlobRef } from "@hypit/protocol";
-import { credentialRef } from "@hypit/runtime";
-import type { CredentialRef, ResourceStore } from "@hypit/runtime";
+import { canonicalize } from "@hypit/hypit/protocol";
+import type { BlobRef } from "@hypit/hypit/protocol";
+import { credentialRef } from "@hypit/hypit/endpoint";
+import type { CredentialRef, ResourceStore } from "@hypit/hypit/endpoint";
 import { checkAssetStore, deleteAsset, publishAsset } from "./assets.js";
 import type { AssetOptions } from "./assets.js";
 import { inspectMedia, validateReference } from "./media.js";
@@ -29,7 +29,7 @@ async function submissionPolicy(options: CreateOfficialMiniMaxProviderOptions): 
 export const officialMiniMaxProviderModuleRef = { name: "@hypit/provider-minimax-official", version: "1" } as const;
 export type CreateOfficialMiniMaxProviderOptions = AssetOptions & {
   readonly instance?: string; readonly pool?: string; readonly baseUrl?: string; readonly apiKey?: CredentialRef;
-  readonly defaultConcurrency?: number; readonly actionLimits?: import("@hypit/endpoint-kit").EndpointActionLimits;
+  readonly defaultConcurrency?: number; readonly actionLimits?: import("@hypit/hypit/endpoint").EndpointActionLimits;
   readonly pollIntervalMs?: number; readonly requestTimeoutMs?: number; readonly operationTimeoutMs?: number;
   readonly fetch?: typeof globalThis.fetch;
   readonly assetTransport?: "auto" | "inline" | "platform" | "oss";
@@ -47,14 +47,12 @@ class TransportError extends Error {}
 class Client {
   constructor(readonly base: string, readonly timeout: number, readonly fetcher: typeof globalThis.fetch) {}
   async read(url: string, init: RequestInit = {}): Promise<Response> {
-    const deadline = requestDeadline(this.timeout);
-    try {
+    try { return await withRequestDeadline(this.timeout, async deadline => {
       const response = await deadline.wait(this.fetcher(url, { ...init, signal: deadline.signal }));
       const bytes = await deadline.wait(response.arrayBuffer());
       if (!response.ok) throw new HttpError(response.status, `MiniMax HTTP ${response.status}: ${redact(new TextDecoder().decode(bytes))}`);
       return new Response(bytes, { status: response.status, headers: response.headers });
-    } catch (error) { if (error instanceof HttpError) throw error; throw new TransportError(redact(error instanceof Error ? error.message : String(error))); }
-    finally { deadline.finish(); }
+    }); } catch (error) { if (error instanceof HttpError) throw error; throw new TransportError(redact(error instanceof Error ? error.message : String(error))); }
   }
   async json(path: string, apiKey: string, init: RequestInit = {}): Promise<Record<string, unknown>> {
     const response = await this.read(`${this.base}${path}`, { ...init, headers: { authorization: `Bearer ${apiKey}`, ...init.headers } });
@@ -264,7 +262,7 @@ export function createOfficialMiniMaxProvider(options: CreateOfficialMiniMaxProv
   if (policyFields.some(value => value !== undefined) && !policyFields.every(value => typeof value === "string" && value.length > 0)) throw new Error("MiniMax 提交保护需要同时配置 module、plan 和共享 ledger");
   const base = safeBase(options.baseUrl ?? "https://api.minimax.cn");
   const client = new Client(base, options.requestTimeoutMs ?? 300_000, options.fetch ?? globalThis.fetch);
-  return defineEndpointPackage({ module: officialMiniMaxProviderModuleRef, facet: "gateway", instance: options.instance ?? "minimax.official", pool: options.pool ?? options.instance ?? "minimax.official", pricing: { kind: "page", url: "https://platform.minimax.cn/docs/api-reference/video-generation-v2-create" }, credentials: { apiKey: options.apiKey ?? credentialRef("os", "minimax-official-h3") }, credentialInputs: { apiKey: { label: "MiniMax official API key" } }, defaultConcurrency: options.defaultConcurrency ?? 1, ...(options.actionLimits ? { actionLimits: options.actionLimits } : {}), capabilities: [{ capability: officialH3Route.capability, returns: officialH3Route.returns, lifecycle: "asynchronous", endpoint: endpoint(client, options), capacity: "minimax-h3", supports: officialH3Route.supports }] });
+  return defineEndpoint({ instance: options.instance ?? "minimax.official", pool: options.pool ?? options.instance ?? "minimax.official", pricing: { kind: "page", url: "https://platform.minimax.cn/docs/api-reference/video-generation-v2-create" }, credentials: { apiKey: options.apiKey ?? credentialRef("local", "minimax-official-h3") }, credentialInputs: { apiKey: { label: "MiniMax official API key" } }, defaultConcurrency: options.defaultConcurrency ?? 1, ...(options.actionLimits ? { actionLimits: options.actionLimits } : {}), capabilities: [{ capability: officialH3Route.capability, returns: officialH3Route.returns, lifecycle: "asynchronous", endpoint: endpoint(client, options), capacity: "minimax-h3", supports: officialH3Route.supports }] });
 }
 
 export { checkAssetStore };

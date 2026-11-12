@@ -38,7 +38,12 @@ export async function fixture(mutate = () => { }, root) {
     mutate(task);
     await atomicJson(join(dir, 'task.json'), task);
     const ledgerRoot = root ?? join(dir, 'ledger');
-    return { dir, task, taskPath: join(dir, 'task.json'), ledgerRoot, prepare: async () => prepare(join(dir, 'task.json'), { ledgerRoot, ...(process.env.HYPIT_TEST_RUNTIME ? { runtimeTemplate: JSON.parse(await readFile(process.env.HYPIT_TEST_RUNTIME, 'utf8')) } : {}) }) };
+    const runtimeTemplate = JSON.parse(await readFile(process.env.HYPIT_TEST_RUNTIME ?? join(projectRoot, 'hypit/hypit.runtime.cangyuan.json'), 'utf8'));
+    // Offline planning uses an explicit dummy credential; never access the user's keychain.
+    runtimeTemplate.credentials = { env: { use: '@hypit/credential-store-env' } };
+    runtimeTemplate.endpoints['minimax.official'].config.apiKey = { store: 'env', key: 'MINIMAX_API_KEY' };
+    process.env.MINIMAX_API_KEY = 'OFFLINE-MOCK-NOT-A-REAL-KEY';
+    return { dir, task, taskPath: join(dir, 'task.json'), ledgerRoot, prepare: async () => prepare(join(dir, 'task.json'), { ledgerRoot, runtimeTemplate }) };
 }
 export function policyInput(plan, segment = plan.segments[0]) {
     const assets = segment.references.map((a, i) => ({ url: `https://assets.example/${i}`, sha256: a.sha256, size: a.size, mediaType: a.mediaType }));

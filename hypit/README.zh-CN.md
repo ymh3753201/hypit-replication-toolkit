@@ -36,7 +36,7 @@
 </p>
 
 <p align="center">
-  <a href="https://hypit.ai"><img alt="Visit our website" src="https://img.shields.io/badge/Visit%20our%20website-DF3C68?style=for-the-badge&logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjI1Ny4wMyAyODcuNDggNDg2Ljk0IDQyNi4wNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTczMy4wMDEsNDYyLjU5MmMtMTEuNDQtMTYuNTEtMzAuMjg1LTI2LjM0NC01MC4zNTMtMjYuMzQ0aC0xNzguNzA1Yy0yMy40OTMsMC00Ny42NzUsMTQuMjM0LTU2LjYyOCwzNS45NjdsLTU0LjA2NSwxNDUuMDUzYy04LjgsMjEuNTIzLTguNjg2LDQ2LjAxMSw0LjI0Nyw2NS4zNTIsMTIuOTksMTkuNDE4LDM3LjAzOCwzMC44OTcsNjAuMzk3LDMwLjg5N2gxNjQuNDljMjcuMDEzLDAsNTEuNDYzLTE2Ljk4OSw2MC45MTQtNDIuMjhsNTYuODAxLTE1Mi4yMjdjNy4wMjEtMTguODI1LDQuMzgxLTM5LjkwOC03LjA1OS01Ni4zOTl2LS4wMzhoLS4wMzh2LjAxOVpNNjMzLjk3OCw2NTIuODEzYy0xLjc5OCw0LjgyMS02LjQ4NSw4LjA3My0xMS42MzIsOC4wNzNoLTE1OS42NWMtOC4zMDMsMC0xMi43OC01LjM1Ny0xNC4zMjktNy42MzNzLTQuNzgzLTguNDc1LTEuNjA3LTE2LjE0N2w0NS42MjgtMTI2LjcyNWM0LjM4MS0xMi4xNDgsMTUuNDU4LTIwLjc5NiwyOC4zNTItMjEuNDY1LjYzMS0uMDM4LDEuMjgyLS4wMzgsMS45NTEtLjAzOGgxNDQuMjY5czIzLjkzMywyLjcxNywxNy43NzMsMjcuOTUxbC01MC43NTUsMTM2LjAwNGgwdi0uMDE5Wk0zNTYuMjUsNjIzLjEyMnMtNDIuNzc3LTIyLjE3My0zMy43ODYtNjIuNDgzbDU2Ljc2Mi0xNTcuMzE2YzkuMTQ1LTI1LjM0OSwzMy4yMTItNDIuMjYxLDYwLjE2OC00Mi4yNjFoMTgxLjc4NWMxMS45NTcsMCwyMy4xNDksNS43OTcsMzAuMDU1LDE1LjU3M2wyNi41NzMsMzcuNjVoLTIxNi4xMjVjLTE2LjY0NCwwLTMxLjU0NywxMC4zNS0zNy4zNDQsMjUuOTYxbC02OC4wODgsMTgyLjg5NWgwdi0uMDE5Wk0yOTIuMDY0LDU0OS41NDNzLTQyLjc5Ny0yMi4xNzMtMzMuNzg2LTYyLjQ4M2w1Ni43NjItMTU3LjMxNmM5LjE2NC0yNS4zNDksMzMuMjMxLTQyLjI2MSw2MC4xNjgtNDIuMjYxaDE3Mi4wMDljMTEuOTU3LDAsMjMuMTQ5LDUuNzk3LDMwLjA1NSwxNS41NzNsMjYuNTczLDM3LjY1aC0yMDYuMzExYy0xNi42NDQsMC0zMS41NDcsMTAuMzUtMzcuMzQ0LDI1Ljk2MWwtNjguMDg4LDE4Mi44OTVoLS4wMzh2LS4wMTlaIi8%2BPC9zdmc%2B"></a>
+  <a href="https://hypit.ai"><img alt="Visit our website" src="https://img.shields.io/badge/Visit%20our%20website-DF3C68?style=for-the-badge&logo=hypit&logoColor=white"></a>
   <a href="https://discord.gg/85hnyQnxpn"><img alt="Join our Discord" src="https://img.shields.io/badge/Join%20our%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white"></a>
   <a href="https://t.me/hypitai"><img alt="Join our Telegram" src="https://img.shields.io/badge/Join%20our%20Telegram-26A5E4?style=for-the-badge&logo=telegram&logoColor=white"></a>
   <a href="https://x.com/hypitai"><img alt="Follow @hypitai on X" src="https://img.shields.io/badge/Follow%20%40hypitai-000000?style=for-the-badge&logo=x&logoColor=white"></a>
@@ -162,7 +162,7 @@ Agent 会检查环境，索要这条视频需要的凭据，生成素材并构�
 
 - **真的能 Clone：** 丢一条视频进来，拿到整份 workflow —— 画面、字幕、B-roll、特效。不是拆解脚本。
 - **一份 workflow，100 个变体：** 复用编排和已有素材，需要变化的部分再生成。
-- **可插拔组件：** 换主播不动字幕。用组件库、fork 一个，或自己写。
+- **可插拔组件：** 换主播不动字幕。使用已安装的包、改造一个示例，或自己编写。
 - **开源：** Hypit 不按人头或渲染次数收费，也不添加水印。模型服务费用由你选择的服务方收取。
 
 ## Hypit 能构建什么
@@ -204,11 +204,15 @@ Agent 会检查环境，索要这条视频需要的凭据，生成素材并构�
     <td>问题咨询</td>
     <td><a href="https://discord.gg/85hnyQnxpn">Discord</a> 或 <a href="https://t.me/hypitai">Telegram</a></td>
   </tr>
+  <tr>
+    <td>旧项目升级</td>
+    <td><a href="./migrations/0.3.zh-CN.md">0.3 迁移指南</a> · <a href="./migrations/0.3.1.zh-CN.md">0.3.1 SDK 迁移指南</a></td>
+  </tr>
 </table>
 
-扫码加入 Hypit 微信群：
+扫码加入微信群：
 
-<img alt="扫码加入 Hypit 微信群" src="./docs/public/wechat-group.jpg" width="320">
+<img alt="扫码加入微信群" src="./docs/public/wechat_group.jpg" width="320">
 
 ## Launch 伙伴
 
@@ -234,6 +238,17 @@ Agent 会检查环境，索要这条视频需要的凭据，生成素材并构�
       </a>
     </td>
     <td><a href="https://tokendance.space/?utm_source=hypit">TokenDance</a> 为开发者提供优化了推理成本的统一多模型网关。通过百亿 Token 补贴和开发者计划，TokenDance 帮助早期开发者大幅降低成本，更专注于产品验证与业务增长。</td>
+  </tr>
+  <tr>
+    <td width="220" align="center">
+      <a href="https://agentsky.dev/">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="./docs/public/agentsky-dark.png">
+          <img alt="AgentSky" src="./docs/public/agentsky-light.png" width="165">
+        </picture>
+      </a>
+    </td>
+    <td><a href="https://agentsky.dev/">AgentSky</a> 是一个用于运行 Claude Code、Codex、OpenClaw 和 Hermes 等 AI 智能体的云平台。每个智能体都在独立的云端计算机上运行，帮助用户完成编程、研究和日常任务。通过 CLI 和 MCP 集成，用户可以直接在现有工作流程中发现智能体、委派任务并获取结果。</td>
   </tr>
   <tr>
     <td width="220" align="center">
@@ -275,6 +290,17 @@ Agent 会检查环境，索要这条视频需要的凭据，生成素材并构�
       <a href="https://beatapi.io/sign-up?aff=hypit"><img alt="BeatAPI" src="./docs/public/beatapi.png" width="165"></a>
     </td>
     <td><a href="https://beatapi.io/sign-up?aff=hypit">BeatAPI</a> 是面向各类 Agent 的专业能力层，提供 AI 模型、真实世界数据、可直接调用的任务能力和专业工作空间，帮助 Agent 完成真实世界的任务。</td>
+  </tr>
+  <tr>
+    <td width="220" align="center">
+      <a href="https://www.sume.com">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="./docs/public/sume-dark.png">
+          <img alt="Sume" src="./docs/public/sume-light.png" width="150">
+        </picture>
+      </a>
+    </td>
+    <td><a href="https://www.sume.com">Sume</a> 通过单个 API 提供主流 AI 图片与视频模型，按模型服务商原价计费，0% 加价。</td>
   </tr>
 </table>
 

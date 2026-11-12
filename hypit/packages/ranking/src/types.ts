@@ -3,8 +3,8 @@ import type {
   FontArtifactRef,
   SynchronizedMedia,
 } from "@hypit/media";
-import type { BlobRef } from "@hypit/protocol";
-import type { CanvasSpace, SpatialFrame } from "@hypit/spatial";
+import type { BlobRef } from "@hypit/hypit/protocol";
+import type { SpatialFrame } from "@hypit/spatial";
 import type { TemporalInstant, TemporalWindow } from "@hypit/temporal";
 
 export type RankingVariant = "tier-board" | "column" | "top-three";
@@ -235,7 +235,7 @@ export type TopThreeItemSet = {
 
 export type TierBoardProgram = {
   readonly id: string;
-  readonly canvas: CanvasSpace;
+  readonly within: SpatialFrame;
   readonly frame: SpatialFrame;
   readonly schedule: TierBoardSchedule;
   readonly style: TierBoardStyle;
@@ -243,7 +243,7 @@ export type TierBoardProgram = {
 };
 export type ColumnProgram = {
   readonly id: string;
-  readonly canvas: CanvasSpace;
+  readonly within: SpatialFrame;
   readonly frame: SpatialFrame;
   readonly schedule: ColumnSchedule;
   readonly style: ColumnStyle;

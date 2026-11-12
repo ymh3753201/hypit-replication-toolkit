@@ -17,3 +17,8 @@
 13. 按当前分发规则及用户实际指令执行。保留工具标识、版权及 `hypit/LICENSE`。
 
 若用户需要另建 Git 仓库，保持外层业务与 `hypit/` 源码的独立边界；仅向用户自己的仓库推送。公开下载与许可范围是不同事项，按包内许可条款处理。
+
+
+## 当前分发版本
+
+业务版本为 0.1.5，引擎为 Hypit 0.3.2，上游提交 47bfe6e9。新任务使用 markup/run、recipe、media-operations、Visual/Audio Clip、text-fine 和 html-video。升级现有 0.2 作品时，按照 hypit/migrations/0.3.zh-CN.md 和 0.3.1.zh-CN.md 处理实际使用的功能。

@@ -14,6 +14,25 @@ if [ ! -x "$PROJECT_NODE" ]; then
   exit 1
 fi
 export PATH="$PROJECT_ROOT/.toolchain/node-v24.14.1/bin:$PATH"
+# Keep 0.2 records readable with their original implementation. No new Build is allowed.
+if [ "${1:-}" = "legacy" ]; then
+  shift
+  case "${1:-}" in
+    version|inspect|get) exec "$PROJECT_NODE" "$PROJECT_ROOT/.toolchain/hypit-0.2.17/bin/hypit.mjs" "$@" ;;
+    status|studio) ;;
+    *) echo '旧版兼容入口仅支持 version、inspect、get、status、studio；禁止新建收费任务。' >&2; exit 1 ;;
+  esac
+  LEGACY_ENGINE="$PROJECT_ROOT/.toolchain/hypit-0.2.17/bin/hypit.mjs"
+  LEGACY_PROFILE="$PROJECT_ROOT/.hypit/compat/hypit-0.2.17.runtime.json"
+  if [ ! -f "$LEGACY_ENGINE" ] || [ ! -f "$LEGACY_PROFILE" ]; then
+    echo '当前安装没有保留旧版兼容环境；请按 docs/上游更新报告-20261109.md 恢复原版本后查询，不能重新提交任务。' >&2
+    exit 1
+  fi
+  case " $* " in
+    *" --runtime "*) exec "$PROJECT_NODE" "$LEGACY_ENGINE" "$@" ;;
+    *) exec "$PROJECT_NODE" "$LEGACY_ENGINE" "$@" --runtime "$LEGACY_PROFILE" ;;
+  esac
+fi
 if [ "${1:-}" = "replicate" ]; then
   shift
   exec "$PROJECT_NODE" "$PROJECT_ROOT/packages/replication-workflow/src/cli.mjs" "$@"

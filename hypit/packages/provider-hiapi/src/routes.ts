@@ -6,9 +6,9 @@ import {
   sealGeneratedVideoSet,
 } from "@hypit/generation";
 import type { GenerationArtifactUrlResolver, GenerationRequest, GenerationWireMapping } from "@hypit/generation";
-import { canonicalize } from "@hypit/protocol";
-import type { BlobRef, CapabilityRef, CanonicalValue, StoredValue, TypeRef } from "@hypit/protocol";
-import type { EndpointRequest, EndpointSupport } from "@hypit/endpoint-kit";
+import { canonicalize } from "@hypit/hypit/protocol";
+import type { BlobRef, CapabilityRef, CanonicalValue, StoredValue, TypeRef } from "@hypit/hypit/protocol";
+import type { EndpointRequest, EndpointSupport } from "@hypit/hypit/endpoint";
 import { hiApiMappings } from "./mapping.js";
 
 /** Documented byte limits for inline media on one HiAPI model; an absent kind carries no documented cap. */

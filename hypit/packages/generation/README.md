@@ -1,8 +1,8 @@
-# `@hypit/hypit/generation`
+# `@hypit/generation`
 
 Provider-neutral generated-media contracts shared by exact image, video and audio model packages.
 
-External Model and Provider packages import this public subpath from the `@hypit/hypit` Distribution.
+Model and Provider packages declare `@hypit/generation` as an ordinary npm dependency.
 It gives both sides the same request and result vocabulary without a dependency between their
 implementations. `sealGenerationPortTable` describes a model's inputs; `GenerationWireMapping` and
 `compileWireRequest` can translate those inputs to one Provider's documented wire fields.
@@ -20,13 +20,29 @@ Provider and only use operations its API actually exposes. The generic helper ne
 catalogue nor switches to another route after a failure. Actual URL resolution belongs to request
 execution, not to discovering a model name or making a planning placeholder.
 
-The package owns `GenerationRequest`, `GeneratedImageSet` and `GeneratedVideoSet` identities,
+The package owns `GenerationRequest`, `GeneratedAudioSet`, `GeneratedImageSet` and `GeneratedVideoSet` identities,
 schemas, validators and graph facets. Generated sets are atomic Products: a Provider persists the
 returned bytes in an ResourceStore and returns typed Blob references rather than transient URLs.
 
 This package does not choose a model, Provider, credential, queue or retry policy. Model packages
-declare exact request Capabilities; selected Endpoint packages implement those
+declare exact request Capabilities; selected Provider packages create Endpoint instances that implement those
 Capabilities in a selected Runtime Profile.
+
+## Exact Model authoring
+
+`@hypit/generation/model` is the author-model subpath for defining an exact generated-media
+Model without repeating the nominal Type → Producer → Need → Graph Fragment shell. It belongs to
+Generation because it derives request Types, validation, facets and author bindings directly from
+one `GenerationPortTable`; it is not a second Model registry or a generic kit.
+
+```ts
+import { defineExactModelModule } from "@hypit/generation/model";
+import { sealGenerationPortTable } from "@hypit/generation";
+```
+
+The Model still owns its exact name, accepted ports, constraints and validation. The selected
+Provider separately owns supported wire mappings and execution. The helper performs no Provider
+selection, fallback, credential lookup or Runtime routing.
 
 ## Reference fields in resource transport
 

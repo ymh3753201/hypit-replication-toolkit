@@ -1,20 +1,20 @@
-import { requestDeadline } from "@hypit/runtime-kit";
+import { withRequestDeadline } from "@hypit/hypit/endpoint/http";
 import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
-import type { AsyncEndpoint, EndpointCredential, EndpointOutcome } from "@hypit/endpoint-kit";
-import { defineEndpointPackage, wakeAfter } from "@hypit/endpoint-kit";
+import type { AsyncEndpoint, EndpointCredential, EndpointOutcome } from "@hypit/hypit/endpoint";
+import { defineEndpoint, wakeAfter } from "@hypit/hypit/endpoint";
 import type { GenerationRequest } from "@hypit/generation";
-import { canonicalize } from "@hypit/protocol";
-import type { BlobRef, CapabilityRef } from "@hypit/protocol";
-import { credentialRef } from "@hypit/runtime";
-import type { CredentialRef, ResourceStore } from "@hypit/runtime";
+import { canonicalize } from "@hypit/hypit/protocol";
+import type { BlobRef, CapabilityRef } from "@hypit/hypit/protocol";
+import { credentialRef } from "@hypit/hypit/endpoint";
+import type { CredentialRef, ResourceStore } from "@hypit/hypit/endpoint";
 import { hiApiRoutes } from "@hypit/provider-hiapi";
 import { prepareMedia } from "./media.js";
 export const cangyuanProviderModuleRef = { name: "@hypit/provider-cangyuan", version: "1" } as const;
 export type CreateCangyuanProviderOptions = {
  readonly instance?: string; readonly pool?: string; readonly baseUrl?: string; readonly apiKey?: CredentialRef;
- readonly defaultConcurrency?: number; readonly actionLimits?: import("@hypit/endpoint-kit").EndpointActionLimits;
+ readonly defaultConcurrency?: number; readonly actionLimits?: import("@hypit/hypit/endpoint").EndpointActionLimits;
  readonly pollIntervalMs?: number; readonly requestTimeoutMs?: number; readonly operationTimeoutMs?: number;
  readonly fetch?: typeof globalThis.fetch;
  readonly publicAssetUrl?: (artifact: BlobRef, resources: ResourceStore, fields?: Readonly<Record<string, string | number | boolean>>) => Promise<string>;
@@ -34,14 +34,12 @@ class TransportError extends Error {}
 class Client {
  constructor(readonly base: string, readonly timeout: number, readonly fetcher: typeof globalThis.fetch) {}
  async read(url: string, init: RequestInit = {}): Promise<Response> {
-   const deadline = requestDeadline(this.timeout);
-   try {
+   try { return await withRequestDeadline(this.timeout, async deadline => {
      const response = await deadline.wait(this.fetcher(url, { ...init, signal: deadline.signal }));
      const bytes = await deadline.wait(response.arrayBuffer());
      if (!response.ok) throw new HttpError(response.status, `Cangyuan HTTP ${response.status}: ${redact(new TextDecoder().decode(bytes)).slice(0, 800)}`);
      return new Response(bytes, { status: response.status, headers: response.headers });
-   } catch (error) { if (error instanceof HttpError) throw error; throw new TransportError(redact(error instanceof Error ? error.message : String(error))); }
-   finally { deadline.finish(); }
+   }); } catch (error) { if (error instanceof HttpError) throw error; throw new TransportError(redact(error instanceof Error ? error.message : String(error))); }
  }
  async json(path: string, key: string, init: RequestInit = {}) { const response = await this.read(`${this.base}${path}`, { ...init, headers: { authorization: `Bearer ${key}`, ...init.headers } }); return object(await response.json(), "Cangyuan response"); }
 }
@@ -236,7 +234,7 @@ export function createCangyuanProvider(options: CreateCangyuanProviderOptions = 
  const activeModels = ids.filter(id => !(options.disabledModels ?? []).includes(id));
  assert(activeModels.length > 0, "没有启用的模型：请检查 disabledModels");
  const route = hiApiRoutes.find(r => r.capability.name === "seedance-2")!;
- return defineEndpointPackage({ module: cangyuanProviderModuleRef, facet: "gateway", instance: options.instance ?? "cangyuan.default", pool: options.pool ?? options.instance ?? "cangyuan.default", pricing: { kind: "page", url: "https://ai.cangyuansuanli.cn/docs/seedance" }, credentials: { apiKey: options.apiKey ?? credentialRef("os", "ai-dsp") }, credentialInputs: { apiKey: { label: "Cangyuan API key" } }, defaultConcurrency: options.defaultConcurrency ?? 1, ...(options.actionLimits ? { actionLimits: options.actionLimits } : {}), capabilities: [{ capability: route.capability, returns: route.returns, lifecycle: "asynchronous", endpoint: endpoint(new Client(base, options.requestTimeoutMs ?? 300_000, options.fetch ?? globalThis.fetch), options, activeModels as Model[]), capacity: "seedance-2", supports: need => {
+ return defineEndpoint({ instance: options.instance ?? "cangyuan.default", pool: options.pool ?? options.instance ?? "cangyuan.default", pricing: { kind: "page", url: "https://ai.cangyuansuanli.cn/docs/seedance" }, credentials: { apiKey: options.apiKey ?? credentialRef("local", "ai-dsp") }, credentialInputs: { apiKey: { label: "Cangyuan API key" } }, defaultConcurrency: options.defaultConcurrency ?? 1, ...(options.actionLimits ? { actionLimits: options.actionLimits } : {}), capabilities: [{ capability: route.capability, returns: route.returns, lifecycle: "asynchronous", endpoint: endpoint(new Client(base, options.requestTimeoutMs ?? 300_000, options.fetch ?? globalThis.fetch), options, activeModels as Model[]), capacity: "seedance-2", supports: need => {
    const upstream = route.supports(need);
    if (upstream.status !== "supported") return upstream;
    try { compatibleModels(need.constraints as unknown as GenerationRequest, activeModels as Model[]); return upstream; }

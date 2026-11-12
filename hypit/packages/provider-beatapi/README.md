@@ -1,5 +1,11 @@
 # `@hypit/provider-beatapi`
 
+Optional Provider, not installed with Hypit. Install in the video project:
+
+```bash
+npm install @hypit/provider-beatapi
+```
+
 Hypit Runtime Provider for a [BeatAPI](https://docs.beatapi.io/quick-guide) account. Each capability
 posts one task to `https://api.beatapi.io` with a `Bearer` API key, polls `GET /v1/tasks/{task_id}`
 until it reaches `succeeded`, downloads every entry of `output.media` and stores the files in the
@@ -54,8 +60,8 @@ Runtime Profile example:
   "format": "hypit.runtime-local@1",
   "dataRoot": ".hypit/runtimes/local",
   "credentials": {
-    "platform": {
-      "use": "@hypit/credential-store-platform"
+    "local": {
+      "use": "@hypit/credential-store-local"
     }
   },
   "endpoints": {
@@ -63,7 +69,7 @@ Runtime Profile example:
       "use": "@hypit/provider-beatapi",
       "pool": "beatapi.default",
       "config": {
-        "apiKey": { "store": "platform", "key": "beatapi.api-key" },
+        "apiKey": { "store": "local", "key": "beatapi.api-key" },
         "defaultConcurrency": 3,
         "pollIntervalMs": 10000
       }
@@ -82,3 +88,6 @@ submission of the same body resolves to the same task.
 HTTP failures keep BeatAPI's `error.code`, message, `request_id` and any `retry_after_seconds`; a
 `failed` task keeps its `error_code` and `error_message`. Any URL inside a surfaced reason is
 redacted, since a hosted result URL is an access capability rather than diagnostic content.
+Polling transport failures and HTTP 429/5xx preserve the same task. BeatAPI's
+`retry_after_seconds` takes precedence over the standard `Retry-After` header; either wait is capped
+at the original operation deadline, where the next poll concludes timeout without querying early.

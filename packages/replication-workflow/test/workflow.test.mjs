@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { existsSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { writeFile, readFile, copyFile, mkdtemp } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -16,6 +17,7 @@ test('same task record compiles requirements, exact dialogue, ordered references
     const f = await fixture();
     const p = await f.prepare();
     await assertUnchanged(p);
+    assert.equal(p.compatibility.sourceDistribution, !existsSync(join(projectRoot, 'hypit', '.git')));
     assert.equal(p.requestCount, 1);
     assert.equal(p.totalCostCents, 500);
     assert.match(p.segments[0].prompt, /This is our new product/);
@@ -138,7 +140,7 @@ test('no region and no sound evidence means no whole-film acceptance; stale byte
     assert.equal((await reviewStatus(p, 'model', 's1')).state, 'accepted');
     const c = await compose(p, { width: 768, height: 768, regions: { 'pip-host': [65, 60, 95, 95] } });
     const source = await readFile(join(dirnamePortable(c.run), 'review.svml'), 'utf8');
-    assert.equal((source.match(/<audio:Item/g) || []).length, 1);
+    assert.equal((source.match(/<audio:Clip/g) || []).length, 1);
     assert.match(source, /pip-pip-host.*media=\{norm-s1.media\}/);
     await recordCompletedBuild(p, 'final', undefined, mockBuild('OFFLINE-MOCK-COMPOSITION'));
     const result = await registerOutput(p, { kind: 'final', file: model.file, buildId: 'OFFLINE-MOCK-COMPOSITION' });

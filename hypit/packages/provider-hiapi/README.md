@@ -1,5 +1,11 @@
 # `@hypit/provider-hiapi`
 
+Optional Provider, not installed with Hypit. Install in the video project:
+
+```bash
+npm install @hypit/provider-hiapi
+```
+
 Hypit Runtime Provider for a [HiAPI](https://www.hiapi.ai) account. Every capability submits one
 task to `POST /v1/tasks` with the model's documented `input` fields, polls
 `GET /v1/tasks/{taskId}` until the task is terminal, downloads `data.output[].url` and stores the
@@ -55,8 +61,8 @@ Runtime Profile example:
   "format": "hypit.runtime-local@1",
   "dataRoot": ".hypit/runtimes/local",
   "credentials": {
-    "platform": {
-      "use": "@hypit/credential-store-platform"
+    "local": {
+      "use": "@hypit/credential-store-local"
     }
   },
   "endpoints": {
@@ -64,7 +70,7 @@ Runtime Profile example:
       "use": "@hypit/provider-hiapi",
       "pool": "hiapi.default",
       "config": {
-        "apiKey": { "store": "platform", "key": "hiapi.api-key" },
+        "apiKey": { "store": "local", "key": "hiapi.api-key" },
         "defaultConcurrency": 3,
         "pollIntervalMs": 10000
       }
@@ -79,3 +85,5 @@ Runtime Profile example:
 `operationTimeoutMs` and `actionLimits` bound single HTTP calls, the whole remote task and action
 concurrency. HTTP failures keep HiAPI's `error_code` and message; failed tasks keep
 `data.error.code` and message, with any signed URL in the message redacted.
+Polling transport failures and HTTP 429/5xx preserve the same task and honor standard `Retry-After`;
+the scheduled wake never passes the original operation deadline. Other errors end the local attempt.

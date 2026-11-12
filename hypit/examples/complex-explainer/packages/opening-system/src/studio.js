@@ -1,9 +1,9 @@
-import { compositionTypes } from "@hypit/hypit/composition";
+import { compositionTypes } from "@hypit/composition";
 import {
-  createStudioCompanionHostFacet,
+  createStudioCompanionFacet,
   textLayer,
   temporalLineageFor,
-} from "@hypit/hypit/studio-adapter";
+} from "@hypit/studio-companion";
 import { module, defaults } from "./definition.js";
 
 const section = (id, label) => ({ id, label });
@@ -177,7 +177,7 @@ const tracks = Object.entries(layouts).map(([kind, inspector]) => ({
               stackOrder: 0,
               renderIds: [],
               ...(temporal ? { temporal } : {}),
-              presentation: { entity: "material-stage", chrome: "standard" },
+              presentation: { kind: "material-stage", chrome: "standard" },
             },
             ...children,
           ];
@@ -254,7 +254,7 @@ const parameters = [
     ...frames(["from", "to"]),
   },
 ];
-export const studioFacet = createStudioCompanionHostFacet({
+export const studioFacet = createStudioCompanionFacet({
   tracks,
   parameters,
 });

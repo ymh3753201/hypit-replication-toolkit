@@ -1,0 +1,9 @@
+{
+  "name": "hypit-replication-toolkit",
+  "private": true,
+  "type": "module",
+  "hypit": {
+    "project": true
+  },
+  "version": "0.1.5"
+}

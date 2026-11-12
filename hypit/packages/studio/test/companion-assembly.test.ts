@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { compositionTypes } from "@hypit/composition";
-import { createStudioTrackCompanionHostFacet } from "@hypit/studio-adapter";
+import { createStudioTrackCompanionFacet } from "@hypit/studio-companion";
+import { loadNodePackageSelection } from "@hypit/hypit/loader/node";
+import { temporalProducers } from "@hypit/temporal";
 
 import { loadStudioCompanionRegistry } from "../src/companion-assembly.js";
 
@@ -10,12 +12,11 @@ test("a Source-selected package contributes its Companion without a second Studi
   const module = { name: "@project/cards", version: "1" } as const;
   const registry = await loadStudioCompanionRegistry({
     distributionPackageRoot: process.cwd(),
-    distributionPackages: [],
     sourcePackages: [{
       specifier: "@project/cards",
       contribution: {
-        format: "hypit.node-package@1",
-        hostFacets: [createStudioTrackCompanionHostFacet([{
+        format: "hypit.package@1",
+        facets: [createStudioTrackCompanionFacet([{
           id: "cards",
           role: "track",
           family: "cards",
@@ -28,4 +29,13 @@ test("a Source-selected package contributes its Companion without a second Studi
     registry.trackCompanionFor(compositionTypes.visualTrack, { surface: "track", module }, [])?.id,
     "@project/cards#cards",
   );
+});
+
+test("Temporal supplies its inverse relations only when the Source selects the package", async () => {
+  const distributionPackageRoot = process.cwd();
+  const empty = await loadStudioCompanionRegistry({ distributionPackageRoot, sourcePackages: [] });
+  assert.equal(empty.temporalRelationFor(temporalProducers.composeWindow, "window"), undefined);
+  const sourcePackages = await loadNodePackageSelection(["@hypit/temporal"], distributionPackageRoot);
+  const registry = await loadStudioCompanionRegistry({ distributionPackageRoot, sourcePackages });
+  assert.ok(registry.temporalRelationFor(temporalProducers.composeWindow, "window"));
 });

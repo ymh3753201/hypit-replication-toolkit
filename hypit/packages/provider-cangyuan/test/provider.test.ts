@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { EndpointRegistry, MemoryResourceStore } from "@hypit/driver-node";
+import { EndpointRegistry, MemoryResourceStore } from "@hypit/hypit/executor";
 import { sealSeedanceRequest, seedanceEndpoints } from "@hypit/seedance";
-import type { Need, CanonicalValue } from "@hypit/protocol";
+import type { Need, CanonicalValue } from "@hypit/hypit/protocol";
 import { buildPayload, compatibleModels, createCangyuanProvider } from "../src/provider.js";
 import type { CreateCangyuanProviderOptions } from "../src/provider.js";
 function request(resolution = "480p", audio = false) { return sealSeedanceRequest("seedance-2", { prompt: ["A blue toy robot waves."], resolution: [resolution], aspectRatio: ["1:1"], duration: [4], generateAudio: [audio], webSearch: [false] }); }

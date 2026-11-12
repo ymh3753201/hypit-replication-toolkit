@@ -31,7 +31,7 @@ For a Profile selecting local rendering, run `hypit programs up --runtime <profi
 <render-instance>` before the first render (or `hypit runtime up --runtime <profile>` to prepare
 the Profile and start its Worker). This explicitly prepares Chrome even when pnpm skips dependency
 build scripts. `hypit doctor --runtime <profile>` diagnoses missing setup without installing it.
-See the [local renderer README](packages/provider-hyperframes-local/README.md) for browser overrides.
+See the [local renderer README](packages/provider-html-local/README.md) for browser overrides.
 
 ## Make the change
 
@@ -50,7 +50,7 @@ page belongs with the change to its counterpart.
 
 ## Check your work
 
-CI runs these commands on every pull request. Run them locally first:
+CI runs these commands on code pull requests. Run them locally first:
 
 ```bash
 pnpm check         # TypeScript type-check
@@ -58,6 +58,28 @@ pnpm test          # package and service-adapter tests
 ```
 
 ## Package the Distribution
+
+### SDK imports in 0.3.1
+
+For an existing video project, follow the [Agent migration guide](migrations/0.3.1.md)
+for the exact import mapping, dependency update and verification steps. Projects from 0.2.x or an
+older checkout should first use the [0.3 project migration](migrations/0.3.md).
+
+Video-domain SDKs are independently installed packages. Component code using a former root subpath,
+such as `@hypit/hypit/composition`, must import from `@hypit/composition` and declare that package
+in its own `dependencies`. The same applies to Timeline, Temporal, Spatial, Media, Narrative,
+Caption, Generation, HTML Program, evidence and projection packages. Import the subpath exported by
+the owning package when using an API such as `@hypit/temporal/markup` or `@hypit/temporal/studio`.
+Generic host APIs remain under `@hypit/hypit/*`. Logical SVML module references retain their `@1`
+identities; this change concerns npm ownership and TypeScript imports.
+
+The root release is `0.3.1`, but this SDK import migration is not source-compatible with `0.3.0`.
+Update the root and affected component dependencies together, then regenerate the project's ordinary
+package-manager lockfile. New-architecture versions of existing domain packages use the `0.2.x`
+line so that old `^0.1.1` dependencies do not silently select them. Previously embedded domain
+packages start at `0.1.0`; packages that did not change keep their existing versions.
+
+### Build and publish
 
 Run `npm run pack:distribution` to build public types and write the release tarball to
 `dist/release/`. This stages npm's selected files in a temporary directory and adapts the English
@@ -69,31 +91,64 @@ With FFmpeg and FFprobe available, run
 the checkout, build its chat example component, prepare its font and local renderer, render and export
 the video, and decode the result. It disables implicit Puppeteer downloads, checks missing-browser
 diagnostics, and prepares the browser in an isolated cache. It uses a separate Hypit state directory, stops its Runtime Worker,
-and retains the temporary project on failure. The `npm package execution` workflow runs this on PRs
-and is reused by publication; publication uploads the same tarball that was installed and executed.
+and retains the temporary project on failure. Set `npm_config_cache` to reuse downloaded package
+bytes; the consumer project, node_modules, Runtime state and browser installation remain isolated.
+CI runs `npm package execution` alongside the repository checks and uploads the tested candidate.
 
-For a formal release, use the existing GitHub Release workflow. Commit the next stable npm version
-in `package.json` to `main`. Open
-**Releases → Draft a new release**, choose that commit with tag `v<version>` (for example `v0.1.8`),
-write the release notes, and publish the Release. The tagged commit must contain this workflow.
-`Publish npm` verifies the tag/version match and that the commit belongs to main's history, runs
-Linux/Windows checks, builds and checks the packaged CLI, then publishes to npm as `latest` and
-attaches the tarball to the Release. Checks and packaging use the triggering commit, even if main
-advances meanwhile. This path supports stable releases, not prereleases.
+For a formal release, commit the intended versions to `main` and wait for **CI** to succeed. It runs
+repository checks and candidate packing in parallel, then installs and executes that same candidate
+on Linux and Windows. PRs use the same checks but their artifacts are not publication candidates.
+Documentation-only changes skip automatic CI; run **Actions → CI → Run workflow** on `main` when
+such a commit is intended for release. One successful CI run supplies the `npm-package` artifact.
 
-**Actions → Publish npm → Run workflow** on `main` remains available: enter the committed version
-and leave **Publish to npm** unchecked for checks and downloadable packaging only; check it for a
-manual npm publication. To finish a failed Release publication, fix the external problem and rerun
-that Release's workflow. If code must change, prepare a new version and Release. An existing npm
-version is skipped without changing `latest`; an existing Release attachment is retained.
-Pushing main, pushing a tag alone, or saving a draft Release does not publish npm. The workflow
-does not edit versions or create tags. A visible Release can precede successful npm publication;
-check its Actions result before announcing that the npm version is available.
+Then publish a GitHub Release tagged `v<version>` at that exact tested commit. **Publish npm** finds
+the successful main CI run for the tag, downloads its artifact, checks the version and npm state,
+publishes dependencies before the root, and attaches the tested root tarball to the Release. It does
+not compile, reinstall or render again. The tag must contain this workflow. Stable releases only.
+
+For manual publication or an independent-package update, open **Actions → Publish npm → Run workflow**
+on `main` and enter the successful **CI run ID**. Leave **Publish** unchecked to download and inspect
+the candidate without npm writes; check it to publish. The run ID selects the tested files even if
+main has since advanced. The **packages** input selects exact space-separated names, such as
+`@hypit/studio`; empty selects the complete candidate. This does not require a new root version when
+the existing root dependency ranges remain valid. Locally the equivalent selection is
+`node scripts/publish-release-candidate.mjs dist/release/release-plan.json --package=@hypit/studio`.
+
+If publication or attachment fails, rerun publication with the same candidate, not CI. Matching
+immutable npm versions are skipped; existing Release attachments are retained. A publishing-tool
+fix can be committed to main and used with the original CI run ID. If the artifact has expired or
+is missing, run CI again explicitly. A failed check or npm preflight consumes no version. Once a
+package version is on npm, changing that package's bytes requires a new version; retrying its
+unchanged publication does not. Pushing main, pushing a tag alone, or saving a draft Release does
+not publish npm. Check the publication result before announcing availability.
+
+Workspace release dependencies use explicit compatibility ranges, such as `workspace:^0.3.0`;
+packing removes the workspace prefix without raising the minimum to the current checkout version.
 
 The npm package's Trusted Publisher settings must allow GitHub Actions from organization `hypit-ai`,
 repository `hypit`, workflow `publish-npm.yml`, with direct `npm publish` enabled and no environment
 name. The publishing job uses OIDC; no npm token secret is needed. An already published version
 cannot be overwritten. npm versions such as `0.1.2` are separate from the logical `@1` interfaces.
+
+Trusted Publisher authority belongs to each npm package rather than to the `@hypit` scope. When a
+new independently published package first enters the Distribution, download the successful CI
+candidate, sign in with `npm login`, then publish and bind that new package:
+
+```sh
+gh run download <ci-run-id> --name npm-package --dir <candidate-directory>
+node scripts/publish-release-candidate.mjs <candidate-directory>/release-plan.json --package=@hypit/new-package
+npm exec --yes --package=npm@^11.15.0 -- node scripts/configure-release-publishers.mjs <candidate-directory>/release-plan.json --package=@hypit/new-package
+```
+
+The publication command selects only the named new package, not the root Distribution; existing
+versions are skipped only when their registry integrity matches the candidate. The trust command
+uses npm 11.15 or newer to bind the named package to this repository and workflow. Omit `--package`
+only when bootstrapping every independent package in a new release plan. npm's first authorization
+page can grant a five-minute window for the remaining package bindings; the command spaces requests
+to stay within registry limits. This is package creation, not a normal release step. Do not retain a
+long-lived npm publication token or publish the root Distribution from the workstation. After the
+package bindings exist, rerun the Release workflow; it verifies matching immutable versions and
+continues through OIDC.
 
 Release notes should identify the changed user behavior and the affected installation. The npm
 Distribution and an installed Skill update separately: link the relevant Skill changes and describe
