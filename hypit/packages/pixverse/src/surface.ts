@@ -1,20 +1,15 @@
-import { artifactTypes } from "@hypit/artifact";
+import { blobTypes } from "@hypit/hypit/blob";
 import { generationPort, sealGenerationMediaBinding, sealGenerationRequestDraft } from "@hypit/generation";
 import type { GenerationMediaPort, GenerationMediaRole, GenerationPortValue } from "@hypit/generation";
 import {
   createExactModelPrimaryGenerationFragment,
   exactModelMediaInputNames,
   exactModelTextInputName,
-} from "@hypit/model-kit";
-import type { ExactModelEndpoint } from "@hypit/model-kit";
-import type {
-  MarkupAttributeValue,
-  StructuredElement,
-  StructuredSurfaceHandler,
-  SurfaceResolvedReference,
-} from "@hypit/markup";
-import type { CanonicalValue, TypeRef } from "@hypit/protocol";
-import { textTypes, verifyText } from "@hypit/text";
+} from "@hypit/generation/model";
+import type { ExactModelEndpoint } from "@hypit/generation/model";
+import type { CanonicalValue, TypeRef } from "@hypit/hypit/protocol";
+import type { MarkupAttributeValue, StructuredElement, StructuredSurfaceHandler, SurfaceResolvedReference } from "@hypit/hypit/markup";
+import { textTypes, verifyText } from "@hypit/hypit/text";
 
 import { pixverseEndpointsByModel } from "./index.js";
 import type { PixverseModel } from "./index.js";
@@ -91,7 +86,7 @@ function media(
   role: GenerationMediaRole,
   resolve: (path: string) => SurfaceResolvedReference | undefined,
 ): SurfaceResolvedReference {
-  const artifact = ref(element, name, artifactTypes.blob, resolve);
+  const artifact = ref(element, name, blobTypes.blob, resolve);
   if (artifact.record !== undefined) {
     assert(artifact.record.value.kind === "blob" && artifact.record.value.mediaType.startsWith(`${role}/`),
       `${element.name}.${name} must reference ${role} media`);
@@ -195,7 +190,9 @@ export const decodePixverseVideoSurface: StructuredSurfaceHandler = ({ element, 
   exact(element, VIDEO_ATTRIBUTES, ["id", "model", "prompt", "duration", "quality"]);
   empty(element);
   const { endpoint } = selectModel(element);
-  const frames = ([["firstFrame", "first-frame"], ["lastFrame", "last-frame"]] as const)
+  assert(element.attributes["aspect-ratio"] !== "auto",
+    `${element.name}.aspect-ratio auto requires video references; use ReferenceVideo`);
+  const frames =([["firstFrame", "first-frame"], ["lastFrame", "last-frame"]] as const)
     .filter(([, attribute]) => element.attributes[attribute] !== undefined)
     .map(([port, attribute]) => ({
       port, role: "image" as const, source: media(element, attribute, "image", resolveReference),
@@ -239,6 +236,8 @@ export const decodePixverseReferenceVideoSurface: StructuredSurfaceHandler = ({ 
     capacity(element, endpoint, port, references.filter((item) => item.port === port).length);
   }
   const videos = references.some((item) => item.port === "referenceVideo");
+  assert(videos || element.attributes["aspect-ratio"] !== "auto",
+    `${element.name}.aspect-ratio auto requires a video Reference`);
   if (videos) {
     assert(element.attributes["duration"] === undefined,
       `${element.name} takes no duration; its video references carry the length of the run`);

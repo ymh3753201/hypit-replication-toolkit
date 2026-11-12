@@ -66,6 +66,10 @@ if chrome:
  print('已配置本机现有 Chrome，用于免费本地渲染。')
 BROWSER
 chmod +x bin/hypit bin/replicate bin/test-replication scripts/*.sh
+# Select the packaged H3 Profile on a fresh installation.
+if [ ! -f "$ROOT/.hypit/runtime" ]; then
+  ./bin/hypit runtime use hypit/hypit.runtime.cangyuan.json
+fi
 ./bin/hypit version
 ./bin/replicate help
 printf '%s\n' '基础依赖安装完成。下一步：配置自己的视频 API，准备渲染浏览器。官方 H3 默认无需 OSS；此时尚未完成真实出片验证。'

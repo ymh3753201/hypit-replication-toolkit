@@ -1,4 +1,4 @@
-import { createRuntimeEndpointAdapterFacet, runtimeConfigActionLimits, runtimeConfigCredentialRef, runtimeConfigExact, runtimeConfigObject, runtimeConfigPositiveInteger, runtimeConfigString } from "@hypit/runtime-kit";
+import { createRuntimeEndpointAdapterFacet, runtimeConfigActionLimits, runtimeConfigCredentialRef, runtimeConfigExact, runtimeConfigObject, runtimeConfigPositiveInteger, runtimeConfigString } from "@hypit/runtime-local/extension";
 import { checkAssetStore, createOfficialMiniMaxProvider } from "./provider.js";
 
 const adapter = createRuntimeEndpointAdapterFacet({
@@ -32,5 +32,5 @@ const adapter = createRuntimeEndpointAdapterFacet({
   },
 });
 
-export const hypitPackage = { format: "hypit.node-package@1" as const, hostFacets: [adapter] };
+export const hypitPackage = { format: "hypit.package@1" as const, facets: [adapter] };
 export default hypitPackage;

@@ -1,4 +1,4 @@
-import { artifactTypes } from "@hypit/artifact";
+import { blobTypes } from "@hypit/hypit/blob";
 import {
   generationPort,
   sealGenerationMediaBinding,
@@ -9,16 +9,11 @@ import type {
   GenerationMediaRole,
   GenerationPortTable,
 } from "@hypit/generation";
-import { exactModelMediaInputNames, exactModelTextInputName } from "@hypit/model-kit";
-import type { ExactModelEndpoint, ExactModelMediaInput } from "@hypit/model-kit";
-import type { CanonicalValue } from "@hypit/protocol";
-import { textTypes, verifyText } from "@hypit/text";
-import type {
-  MarkupAttributeValue,
-  StructuredElement,
-  StructuredSurfaceHandler,
-  SurfaceResolvedReference,
-} from "@hypit/markup";
+import { exactModelMediaInputNames, exactModelTextInputName } from "@hypit/generation/model";
+import type { ExactModelEndpoint, ExactModelMediaInput } from "@hypit/generation/model";
+import { textTypes, verifyText } from "@hypit/hypit/text";
+import type { CanonicalValue } from "@hypit/hypit/protocol";
+import type { MarkupAttributeValue, StructuredElement, StructuredSurfaceHandler, SurfaceResolvedReference } from "@hypit/hypit/markup";
 
 import { createSeedanceAssembledGenerationFragment } from "./fragment.js";
 import { seedanceEndpoints, seedancePorts } from "./index.js";
@@ -105,7 +100,7 @@ function mediaReference(
   role: GenerationMediaRole,
   subject: string,
 ): SurfaceResolvedReference {
-  if (!sameType(reference.type, artifactTypes.blob)) throw new Error(`${subject} must reference a BlobArtifact`);
+  if (!sameType(reference.type, blobTypes.blob)) throw new Error(`${subject} must reference a Blob`);
   const value = reference.record?.value;
   if (value !== undefined && (value.kind !== "blob" || !value.mediaType.startsWith(`${role}/`))) {
     throw new Error(`${subject} must reference ${role} media`);

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { EndpointRegistry, MemoryResourceStore } from '@hypit/driver-node';
+import { EndpointRegistry, MemoryResourceStore } from '@hypit/hypit/executor';
 import { sealMinimaxH3Request, minimaxH3Endpoints } from '@hypit/minimax-h3';
 import { createOfficialMiniMaxProvider } from '../src/provider.ts';
 import { fixture, policyInput } from '../../../../packages/replication-workflow/test/helpers.mjs';

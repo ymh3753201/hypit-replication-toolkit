@@ -1,10 +1,9 @@
-import { captionFineStudioTrackCompanions } from "@hypit/caption-fine-studio";
-import { createStudioTrackCompanionHostFacet } from "@hypit/hypit/studio-adapter";
-import {
-  createMarkupSurfaceHostFacet,
-  sealGraphFragment,
-  canonicalize,
-} from "@hypit/hypit/author-kit";
+import { captionFineStudioTrackCompanions } from "@hypit/caption-fine/studio";
+import { createProducerPackageFacet } from "@hypit/hypit/producer";
+import { createStudioTrackCompanionFacet } from "@hypit/studio-companion";
+import { createMarkupSurfaceFacet } from "@hypit/hypit/markup";
+import { sealGraphFragment } from "@hypit/hypit/author";
+import { canonicalize } from "@hypit/hypit/protocol";
 import {
   captionFineManifest,
   captionFineModuleRef,
@@ -35,8 +34,8 @@ const manifest = {
   ],
 };
 const inline = (r) => r.value.value;
-export function singleLineSchedule(caption, program, document) {
-  const schedule = scheduleFineCaption(caption, program, document);
+export function singleLineSchedule(timing, program, document) {
+  const schedule = scheduleFineCaption(timing, program, document);
   const cues = [...schedule.cues].sort(
     (a, b) => a.visibleStartFrame - b.visibleStartFrame,
   );
@@ -96,11 +95,7 @@ const handler = (ctx) => {
     })),
   };
 };
-export const hypitPackage = {
-  format: "hypit.node-package@1",
-  modules: [{ manifest }],
-  components: [
-    {
+const producers = {
       producers: [
         {
           producer,
@@ -110,7 +105,7 @@ export const hypitPackage = {
                 kind: "inline",
                 value: canonicalize(
                   singleLineSchedule(
-                    inline(i.caption),
+                    inline(i.timing),
                     inline(i.program),
                     inline(i.document),
                   ),
@@ -121,18 +116,21 @@ export const hypitPackage = {
           }),
         },
       ],
-    },
-  ],
-  hostFacets: [
-    createStudioTrackCompanionHostFacet(
+};
+export const hypitPackage = {
+  format: "hypit.package@1",
+  modules: [{ manifest }],
+  facets: [
+    createProducerPackageFacet(producers),
+    createStudioTrackCompanionFacet(
       captionFineStudioTrackCompanions.map((companion) => ({
         ...companion,
         output: { ...companion.output, modules: [module] },
       })),
     ),
-    createMarkupSurfaceHostFacet({
+    createMarkupSurfaceFacet({
       module,
-      declaration: captionFineMarkupSurfaces.find((s) => s.name === "track"),
+      declaration: captionFineMarkupSurfaces.find((s) => s.name === "caption"),
       handler,
     }),
   ],

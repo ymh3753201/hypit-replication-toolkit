@@ -17,29 +17,30 @@ export async function compose(plan, layout) {
     const picture = [];
     const audio = [];
     const captions = [];
-    const recipes = ['media.full { stack-order: 0; fit: contain; clip: frame; }', 'film.main { background: #000000; }'];
+    const recipes = ['film.main { background: #000000; }'];
     const inputs = [];
     const asset = file => xml(relative(out, file));
     const track = async (file) => { inputs.push({ file, sha256: await hashFile(file) }); };
     const duration = plan.segments.reduce((n, s) => n + s.duration, 0);
     let offset = 0;
-    declarations.push(`<time:Clock id="clock" frame-rate="30"/><time:Timeline id="program" clock={clock} end="${duration}s"/>`, `<space:Canvas id="canvas" width="${layout.width}" height="${layout.height}"/>`, '<space:Frame id="full" within={canvas} left="0%" top="0%" right="100%" bottom="100%"/>');
+    declarations.push(`<time:Clock id="clock" frame-rate="30"/><time:Timeline id="program" clock={clock} end="${duration}s"/>`, `<space:Canvas id="canvas" width="${layout.width}" height="${layout.height}"/>`, '<space:Frame id="full" within={canvas.bounds} left="0%" top="0%" right="100%" bottom="100%"/>');
     for (const s of plan.segments) {
         check((await reviewStatus(plan, 'model', s.id)).state === 'accepted', `片段 ${s.id} 的人物/商品/声音等必需项尚未通过，停止剪辑交付`);
         const model = registry.model[s.id];
         await track(model.file);
         declarations.push(`<media:Video id="clip-${s.id}" src="${asset(model.file)}"/>`, `<pipeline:Normalize id="norm-${s.id}" source={clip-${s.id}} video="primary-moving" audio="default" span-authority="video" clock={clock}/>`);
-        picture.push(`<media-track:Item id="main-${s.id}" media={norm-${s.id}.media} frame={full} at="${offset}s" for="${s.duration}s" appearance={look.media.full}/>`);
+        declarations.push(`<time:Window id="window-${s.id}" timeline={program.timeline} from="${offset}s" for="${s.duration}s"/>`);
+        picture.push(`<visual:Clip id="main-${s.id}" media={norm-${s.id}.media} frame={full} during={window-${s.id}} z="0" fit="contain"/>`);
         for (const region of plan.task.occurrences.filter(o => o.segmentId === s.id && o.slot === 'pip')) {
             const box = layout.regions?.[region.id];
             check(box && box.every(Number.isFinite) && box.length === 4, '小窗须提供 [left,top,right,bottom] 百分比布局');
             check(box[0] >= 0 && box[1] >= 0 && box[2] <= 100 && box[3] <= 100 && box[2] > box[0] && box[3] > box[1], '小窗范围无效');
-            declarations.push(`<space:Frame id="frame-${region.id}" within={canvas} left="${box[0]}%" top="${box[1]}%" right="${box[2]}%" bottom="${box[3]}%"/>`);
-            recipes.push(`media.${region.id} { stack-order: 20; fit: contain; clip: frame; trim-start: ${Math.round(region.start * 30)}; trim-end: ${Math.round(region.end * 30)}; }`);
-            picture.push(`<media-track:Item id="pip-${region.id}" media={norm-${s.id}.media} frame={frame-${region.id}} at="${offset + region.start}s" for="${region.end - region.start}s" appearance={look.media.${region.id}}/>`);
+            declarations.push(`<space:Frame id="frame-${region.id}" within={canvas.bounds} left="${box[0]}%" top="${box[1]}%" right="${box[2]}%" bottom="${box[3]}%"/>`);
+            declarations.push(`<time:Window id="window-${region.id}" timeline={program.timeline} from="${offset + region.start}s" for="${region.end - region.start}s"/>`);
+            picture.push(`<visual:Clip id="pip-${region.id}" media={norm-${s.id}.media} frame={frame-${region.id}} during={window-${region.id}} z="20" fit="contain"><visual:Map target-at="start" source-at="${Math.round(region.start * 30)}f" rate="1"/></visual:Clip>`);
         }
         if (['generated', 'voice_reference'].includes(plan.task.audio.mode))
-            audio.push(`<audio:Item id="sound-${s.id}" source={norm-${s.id}.media} at="${offset}s" for="${s.duration}s" playback="once"/>`);
+            audio.push(`<audio:Clip id="sound-${s.id}" source={norm-${s.id}.media} during={window-${s.id}}/>`);
         offset += s.duration;
     }
     if (['preserve', 'recording'].includes(plan.task.audio.mode)) {
@@ -47,7 +48,7 @@ export async function compose(plan, layout) {
         const file = resolve(dirname(plan.taskPath), a.file);
         await track(file);
         declarations.push(`<media:${a.kind === 'video' ? 'Video' : 'Audio'} id="retained-audio" src="${asset(file)}"/>`, `<pipeline:Normalize id="retained" source={retained-audio} video="none" audio="default" span-authority="audio" clock={clock}/>`);
-        audio.push(`<audio:Item id="retained-sound" source={retained.media} during="program" playback="once"/>`);
+        audio.push(`<audio:Clip id="retained-sound" source={retained.media} during={program.window}/>`);
     }
     for (const [i, card] of (layout.cards ?? []).entries()) {
         check(card.assetId && card.reviewedNoOldSubjectBy, '卡片须确认不会带入旧人物');
@@ -61,29 +62,30 @@ export async function compose(plan, layout) {
         check(Number.isFinite(card.width) && card.width > 0 && Number.isFinite(card.height) && card.height > 0, '卡片需登记真实图片尺寸');
         const dimensions = await probe(file);
         check(dimensions.width === card.width && dimensions.height === card.height, '卡片声明尺寸与真实图片不同');
-        declarations.push(`<media:Image id="card-${i}" src="${asset(file)}"/>`, `<space:Extent id="extent-${i}" width="${card.width}" height="${card.height}"/>`, `<space:Frame id="card-frame-${i}" within={canvas} left="${box[0]}%" top="${box[1]}%" right="${box[2]}%" bottom="${box[3]}%"/>`);
-        recipes.push(`media.card${i} { stack-order: 10; fit: contain; clip: frame; }`);
-        picture.push(`<media-track:Item id="card-item-${i}" image={card-${i}} extent={extent-${i}} frame={card-frame-${i}} at="${card.start}s" for="${card.end - card.start}s" appearance={look.media.card${i}}/>`);
+        declarations.push(`<media:Image id="card-${i}" src="${asset(file)}"/>`, `<space:Extent id="extent-${i}" width="${card.width}" height="${card.height}"/>`, `<space:Frame id="card-frame-${i}" within={canvas.bounds} left="${box[0]}%" top="${box[1]}%" right="${box[2]}%" bottom="${box[3]}%"/>`);
+        declarations.push(`<time:Window id="window-card-${i}" timeline={program.timeline} from="${card.start}s" for="${card.end - card.start}s"/>`);
+        picture.push(`<visual:Clip id="card-item-${i}" image={card-${i}} extent={extent-${i}} frame={card-frame-${i}} during={window-card-${i}} z="10" fit="contain"/>`);
     }
     if (layout.captions?.length) {
         check(layout.fontFile, '字幕需要已准备好的精确字体文件');
         const fontFile = resolve(dirname(plan.taskPath), layout.fontFile);
         await track(fontFile);
-        declarations.push(`<media:Font id="font" src="${asset(fontFile)}" weight="400" style="normal"/>`, '<space:Frame id="caption-frame" within={canvas} left="5%" top="80%" right="95%" bottom="98%"/>', '<typo:Style id="caption-style" font={font} recipe={look.text.caption}><typo:Fill color="#ffffff"/><typo:Stroke color="#000000" width="2" placement="outside"/></typo:Style>');
-        recipes.push('text.caption { stack-order: 50; size: 40; weight: 400; }');
+        declarations.push(`<media:Font id="font" src="${asset(fontFile)}" weight="400" style="normal"/>`, '<space:Frame id="caption-frame" within={canvas.bounds} left="5%" top="80%" right="95%" bottom="98%"/>', '<typo:Style id="caption-style" font={font} recipe={look.text.caption}><typo:Fill color="#ffffff"/><typo:Stroke color="#000000" width="2" placement="outside"/></typo:Style>');
+        recipes.push('text.caption { size: 40; weight: 400; }');
         for (const [i, c] of layout.captions.entries()) {
             check(c.text && c.start >= 0 && c.end > c.start && c.end <= duration, '字幕内容或时间无效');
-            captions.push(`<typo:Area id="caption-${i}" placement={caption-frame} style={caption-style} at="${c.start}s" for="${c.end - c.start}s">${xml(c.text)}</typo:Area>`);
+            declarations.push(`<time:Window id="window-caption-${i}" timeline={program.timeline} from="${c.start}s" for="${c.end - c.start}s"/>`);
+            captions.push(`<typo:Flow id="caption-${i}" timeline={program.timeline} within={caption-frame} style={caption-style} during={window-caption-${i}} z="50">${xml(c.text)}</typo:Flow>`);
         }
     }
-    const imports = [['media', 'media'], ['pipeline', 'media-pipeline'], ['media-track', 'media-track'], ['audio', 'audio-track'], ['time', 'timeline-author'], ['space', 'spatial'], ['typo', 'typography-track'], ['film', 'film'], ['render', 'render-hyperframes']].map(([as, p]) => `<import as="${as}" from="@hypit/${p}@1"/>`).join('\n');
-    const source = `<?svml using="@hypit/markup@1"?>\n<svml>\n${imports}\n<import as="look" source="./review.svs"/>\n${declarations.join('\n')}\n<media-track:Track id="picture" timeline={program.timeline} canvas={canvas}>${picture.join('\n')}</media-track:Track>\n${audio.length ? `<audio:Track id="sound" timeline={program.timeline}>${audio.join('\n')}</audio:Track>` : ''}\n${captions.length ? `<typo:Track id="captions" timeline={program.timeline}>${captions.join('\n')}</typo:Track>` : ''}\n<film:Film id="main" canvas={canvas} timeline={program.timeline} appearance={look.film.main}><film:Track source={picture.visual}/>${audio.length ? '<film:Track source={sound.audio}/>' : ''}${captions.length ? '<film:Track source={captions.track}/>' : ''}</film:Film>\n<render:Video id="final" composition={main.composition} timeline={program.timeline}/>\n</svml>\n`;
+    const imports = [['media', 'media'], ['pipeline', 'media-operations'], ['visual', 'visual-track'], ['audio', 'audio-track'], ['time', 'timeline-author'], ['space', 'spatial'], ['typo', 'text-fine'], ['film', 'film'], ['render', 'html-video']].map(([as, p]) => `<import as="${as}" from="@hypit/${p}@1"/>`).join('\n');
+    const source = `<?svml using="@hypit/markup@1"?>\n<svml>\n${imports}\n<import as="look" source="./review.svs"/>\n${declarations.join('\n')}\n<visual:Track id="picture" timeline={program.timeline}>${picture.join('\n')}</visual:Track>\n${audio.length ? `<audio:Track id="sound" timeline={program.timeline}>${audio.join('\n')}</audio:Track>` : ''}\n${captions.join('\n')}\n<film:Film id="main" canvas={canvas.canvas} timeline={program.timeline} appearance={look.film.main}><film:Track source={picture.visual}/>${audio.length ? '<film:Track source={sound.audio}/>' : ''}${captions.map((_, i) => `<film:Track source={caption-${i}.visual}/>`).join('')}</film:Film>\n<render:Video id="final" composition={main.composition} timeline={program.timeline}/>\n</svml>\n`;
     const file = join(out, 'review.svml');
     const run = join(out, 'review.svrun');
     const style = join(out, 'review.svs');
     await writeFile(file, source, { mode: 0o600 });
-    await writeFile(style, `<?svml using="@hypit/svs@1"?>\n<sheet version="1">${recipes.join('\n')}</sheet>\n`, { mode: 0o600 });
-    await writeFile(run, '<?svml using="@hypit/run-markup@1"?>\n<svrun version="1"><author source="./review.svml"/><target output="final.video"/></svrun>\n', { mode: 0o600 });
+    await writeFile(style, `<?svml using="@hypit/recipe@1"?>\n<sheet version="1">${recipes.join('\n')}</sheet>\n`, { mode: 0o600 });
+    await writeFile(run, '<?svml using="@hypit/markup/run@1"?>\n<svrun version="1"><author source="./review.svml"/><target output="final.video"/></svrun>\n', { mode: 0o600 });
     for (const f of [file, style, run])
         await track(f);
     const localRuntime = join(out, 'local.runtime.json');

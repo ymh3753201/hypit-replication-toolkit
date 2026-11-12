@@ -19,7 +19,7 @@ export async function hypit(args) {
             throw error;
     }
     const result = JSON.parse(stdout);
-    check(result.ok !== false, result.error?.message ?? 'Hypit 检查/执行未通过');
+    check(result.ok !== false, result.error?.message ?? ([...(result.preflight?.diagnostics ?? []), ...(result.diagnostics ?? [])].filter(d => d.severity === 'error').map(d => d.message).join('; ') || 'Hypit 检查/执行未通过'));
     return result;
 }
 export async function checkPlan(plan, options = {}) {

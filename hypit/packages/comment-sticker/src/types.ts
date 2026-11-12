@@ -1,6 +1,6 @@
 import type { FrameSpan } from "@hypit/composition";
 import type { FontArtifactRef } from "@hypit/media";
-import type { BlobRef } from "@hypit/protocol";
+import type { BlobRef } from "@hypit/hypit/protocol";
 import type { SpatialFrame } from "@hypit/spatial";
 
 export type CommentStickerTextStyle = {
@@ -96,7 +96,7 @@ export type CommentStickerItemProgram = {
   readonly style: CommentStickerStyle;
   readonly content: CommentStickerContent;
   readonly avatar?: BlobRef;
-  readonly tieBreak: string;
+  readonly order: number;
 };
 
 export type CommentStickerSet = {

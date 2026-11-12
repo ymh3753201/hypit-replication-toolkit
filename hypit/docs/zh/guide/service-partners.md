@@ -10,9 +10,21 @@ HypiHub 是 Hypit 推荐的集成托管服务，提供已支持的生成与 Whis
 
 下面介绍的合作方是独立服务，各有自己的账户、条款、价格、模型可用性和 API。
 合作关系提供一个了解服务的入口，不共用 HypiHub 账户。
-发行包为下面每个服务内置了一个使用 API Key 的 Provider，覆盖该服务提供的已安装模型，
+下面的 Provider 是独立版本的可选 npm 包，不随 Hypit 安装。项目用普通包管理器额外安装所选包，再在
+Runtime Profile 中引用它；安装本身不会启用服务。Provider 覆盖该服务提供的已安装模型，
 并按该服务的输入限制报告不支持的请求；具体清单见各 Provider 的 README。
 服务提供、但不在这个范围内的模型，通过普通的 [Model 与 Provider](./providers.md) 扩展方式连接。
+
+在视频项目目录中，只执行所选服务对应的一条命令：
+
+```bash
+npm install @hypit/provider-tokendance
+npm install @hypit/provider-hiapi
+npm install @hypit/provider-pollo
+npm install @hypit/provider-beatapi
+npm install @hypit/provider-sume
+npm install @hypit/provider-monid
+```
 
 ## 模型与工具 API 合作方
 
@@ -45,6 +57,14 @@ Pollo 只接受公网 URL 形式的参考素材，带参考素材的请求需要
 并通过 BeatAPI 的文件接口上传参考素材。
 其余模型见它的[视频](https://docs.beatapi.io/video-api)与[图片](https://docs.beatapi.io/image-api)模型索引。
 
+### Sume
+
+[Sume](https://www.sume.com) 通过一个任务接口提供视频和图片模型。
+[`@hypit/provider-sume`](https://github.com/hypit-ai/hypit/blob/main/packages/provider-sume/README.md)
+提供 Seedance 2.0、2.5 系列、MiniMax H3、Grok Imagine 1.5、PixVerse V6 与 C1、GPT Image 2、
+Nano Banana 2.1 与 Pro、Seedream 5.0 lite，并通过 Sume 的上传地址上传参考素材。
+其余模型见它的[开发者文档](https://docs.sume.com/llms.txt)与实时模型目录。
+
 ### Monid
 
 [Monid](https://monid.ai) 是 Hypit 的服务合作方。
@@ -61,4 +81,4 @@ Agent 可以在项目包中实现这次所需的请求与结果映射。
 HypiHub 额度不支付这份部署。
 
 [使用自有模型部署](./providers.md#使用自有模型部署)说明自己管理服务环境时需要处理什么。
-没有合作关系、没有官方内置 Provider，也可以使用一份合适的部署。
+没有合作关系、没有官方维护的 Provider，也可以使用一份合适的部署。

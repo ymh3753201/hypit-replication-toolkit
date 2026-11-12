@@ -1,4 +1,4 @@
-import type { ModuleRef } from "@hypit/protocol";
+import type { ModuleRef } from "@hypit/hypit/protocol";
 import type { GenerationWireMapping } from "@hypit/generation";
 
 const MINIMAX: ModuleRef = { name: "@hypit/minimax-h3", version: "1" };

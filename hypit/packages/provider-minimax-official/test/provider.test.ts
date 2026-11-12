@@ -4,9 +4,9 @@ import { execFileSync } from "node:child_process";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { EndpointRegistry, MemoryResourceStore } from "@hypit/driver-node";
+import { EndpointRegistry, MemoryResourceStore } from "@hypit/hypit/executor";
 import { minimaxH3Endpoints, sealMinimaxH3Request } from "@hypit/minimax-h3";
-import type { BlobRef, CanonicalValue, Need } from "@hypit/protocol";
+import type { BlobRef, CanonicalValue, Need } from "@hypit/hypit/protocol";
 import { createOfficialMiniMaxProvider } from "../src/provider.js";
 import { officialH3Body, officialH3Route } from "../src/route.js";
 

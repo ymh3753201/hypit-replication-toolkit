@@ -1,4 +1,4 @@
-import { artifactTypes } from "@hypit/artifact";
+import { blobTypes } from "@hypit/hypit/blob";
 import { sealGenerationPortRequest, sealGenerationPortTable } from "@hypit/generation";
 import type {
   GenerationPort,
@@ -7,9 +7,9 @@ import type {
   GenerationPortValue,
   GenerationRequest,
 } from "@hypit/generation";
-import type { SurfaceAttributeVocabulary, SurfacePortVocabulary } from "@hypit/markup";
-import { defineExactModelModule } from "@hypit/model-kit";
-import { textTypes } from "@hypit/text";
+import type { SurfaceAttributeVocabulary, SurfacePortVocabulary } from "@hypit/hypit/markup";
+import { defineExactModelModule } from "@hypit/generation/model";
+import { textTypes } from "@hypit/hypit/text";
 
 import { pixverseRequestValidator } from "./validation.js";
 
@@ -44,6 +44,7 @@ function pixversePortTable(model: PixverseModel): GenerationPortTable {
         // continuous shot rather than several cuts.
         { kind: "atMostOneOf", ports: ["multiClip", "lastFrame"] },
         { kind: "atMostOneOf", ports: ["multiClip", "referenceImage"] },
+        { kind: "atMostOneOf", ports: ["multiClip", "referenceVideo"] },
         // The reference videos carry the length of the generated run.
         { kind: "atMostOneOf", ports: ["duration", "referenceVideo"] },
       ]
@@ -132,13 +133,18 @@ const pixverseCommonAttributes: readonly SurfaceAttributeVocabulary[] = [
 ];
 
 const pixverseAspectRatio: SurfaceAttributeVocabulary = {
-  name: "aspect-ratio", kind: "literal", required: false, values: [...PIXVERSE_V6_ASPECT_RATIOS],
+  name: "aspect-ratio", kind: "literal", required: false, values: [...PIXVERSE_ASPECT_RATIOS],
   summary: "The Frame shape of the generated video.",
+};
+
+const pixverseReferenceAspectRatio: SurfaceAttributeVocabulary = {
+  ...pixverseAspectRatio, values: [...PIXVERSE_V6_ASPECT_RATIOS],
+  summary: "The Frame shape of the generated video; `auto` takes the shape of the V6 video references.",
 };
 
 const pixverseVideoPort: readonly SurfacePortVocabulary[] = [{
   name: "video",
-  type: artifactTypes.blob,
+  type: blobTypes.blob,
   summary: "The generated video, addressed as `<id>.video`.",
 }];
 
@@ -158,9 +164,9 @@ export const pixverseMarkupSurfaces = [
         ...pixverseCommonAttributes,
         { name: "duration", kind: "literal" as const, required: true,
           summary: "How many seconds of video to render, from 1 to 15." },
-        { name: "first-frame", kind: "reference" as const, required: false, accepts: [artifactTypes.blob],
+        { name: "first-frame", kind: "reference" as const, required: false, accepts: [blobTypes.blob],
           summary: "Starts the video from one image Artifact." },
-        { name: "last-frame", kind: "reference" as const, required: false, accepts: [artifactTypes.blob],
+        { name: "last-frame", kind: "reference" as const, required: false, accepts: [blobTypes.blob],
           summary: "Ends the video on one image Artifact, bridging from the first frame." },
         pixverseAspectRatio,
         { name: "multi-clip", kind: "literal" as const, required: false, values: ["true", "false"],
@@ -197,16 +203,16 @@ export const pixverseMarkupSurfaces = [
         ...pixverseCommonAttributes,
         { name: "duration", kind: "literal" as const, required: false,
           summary: "How many seconds of video to render, from 1 to 15; video references carry their own length." },
-        pixverseAspectRatio,
+        pixverseReferenceAspectRatio,
       ],
       children: [{
         tag: "Reference",
         cardinality: "many" as const,
         summary: "Attaches one subject Artifact the model generates from, chosen by an `image` or `video` reference.",
         attributes: [
-          { name: "image", kind: "reference" as const, required: false, accepts: [artifactTypes.blob],
+          { name: "image", kind: "reference" as const, required: false, accepts: [blobTypes.blob],
             summary: "Selects the image Artifact whose subject the generated video carries." },
-          { name: "video", kind: "reference" as const, required: false, accepts: [artifactTypes.blob],
+          { name: "video", kind: "reference" as const, required: false, accepts: [blobTypes.blob],
             summary: "Selects the video Artifact whose motion and subject the generated video carries." },
         ],
       }],
@@ -220,7 +226,7 @@ export const pixverseMarkupSurfaces = [
         pixverseModelNote,
         "The prompt addresses the references in order as `@ref_1`, `@ref_2` and so on.",
         "`Reference` carries exactly one of `image` or `video`, and is empty.",
-        "V6 accepts up to two video references totalling 15 seconds, which carry the length of the run in place of `duration`; `aspect-ratio=\"auto\"` takes their shape.",
+        "V6 accepts up to two video references totalling 15 seconds, which carry the length of the run in place of `duration`; `aspect-ratio=\"auto\"` takes their shape and requires at least one video reference.",
         pixversePromptNote,
       ],
     },

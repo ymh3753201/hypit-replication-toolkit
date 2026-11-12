@@ -2,16 +2,16 @@ import type {
   CreateLocalRuntimeControlOptions,
   LocalRuntimeControl,
 } from "./types.js";
-import { buildExecutionActivity } from "@hypit/runtime";
+import { buildExecutionActivity } from "./execution.js";
 import type {
-  PendingBuildSubmission,
-  BuildCatalogEntry,
-  BuildExecutionSnapshot,
   BuildSnapshot,
   OperationSnapshot,
-} from "@hypit/runtime";
-import type { BuildView } from "@hypit/runtime-host-node";
-import { buildIdCreatedAt } from "@hypit/protocol";
+} from "@hypit/hypit/runtime";
+import type { PendingBuildSubmission } from "./submission.js";
+import type { BuildCatalogEntry } from "./catalog.js";
+import type { BuildExecutionSnapshot } from "./execution.js";
+import type { BuildView } from "./host-api.js";
+import { buildIdCreatedAt } from "@hypit/hypit/protocol";
 
 function buildView(input: {
   readonly build: string;
@@ -20,7 +20,7 @@ function buildView(input: {
   readonly submission?: PendingBuildSubmission;
   readonly execution?: BuildExecutionSnapshot;
   readonly operations: readonly OperationSnapshot[];
-  readonly commands: readonly import("@hypit/runtime").CommandExecutionReceipt[];
+  readonly commands: readonly import("@hypit/hypit/runtime").CommandExecutionReceipt[];
 }): BuildView | undefined {
   if (input.submission === undefined && input.execution === undefined) return undefined;
   const createdAt = buildIdCreatedAt(input.build);

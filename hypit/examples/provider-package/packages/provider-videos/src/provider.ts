@@ -1,10 +1,10 @@
-import { canonicalize, defineEndpointPackage, wakeAfter } from "@hypit/hypit/endpoint-kit";
-import type { AsyncEndpoint, CredentialRef, EndpointRequest } from "@hypit/hypit/endpoint-kit";
+import { canonicalize, defineEndpoint, wakeAfter } from "@hypit/hypit/endpoint";
+import type { AsyncEndpoint, CredentialRef, EndpointRequest } from "@hypit/hypit/endpoint";
 import {
   compileWireRequest, generationTypes, mappingSupportsRequest,
   sealGeneratedVideoSet, selectWireModelForRequest,
-} from "@hypit/hypit/generation";
-import type { GenerationRequest, GenerationWireMapping } from "@hypit/hypit/generation";
+} from "@hypit/generation";
+import type { GenerationRequest, GenerationWireMapping } from "@hypit/generation";
 
 export const providerModule = { name: "@example/provider-videos", version: "1" } as const;
 export const capability = { module: { name: "@hypit/seedance", version: "1" }, name: "seedance-2-mini" } as const;
@@ -162,8 +162,8 @@ export function createVideoProvider(options: {
       } } };
     },
   };
-  return defineEndpointPackage({
-    module: providerModule, facet: "videos", instance: options.instance, pool: options.pool,
+  return defineEndpoint({
+    instance: options.instance, pool: options.pool,
     credentials: { apiKey: options.apiKey }, credentialInputs: { apiKey: { label: "Video service API key" } },
     defaultConcurrency: options.concurrency ?? 1,
     actionLimits: { submit: { concurrency: 1 }, poll: { concurrency: 4 }, collect: { concurrency: 2 } },

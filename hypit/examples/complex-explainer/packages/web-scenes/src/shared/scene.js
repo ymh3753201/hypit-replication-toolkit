@@ -1,11 +1,11 @@
 import { terminalSetup } from "./terminal.js";
 import { scene_styles } from "./scene-styles.js";
-import { sealVisualTrack } from "@hypit/hypit/composition";
-import { browserProgram } from "@hypit/hypit/hyperframes";
-import { assertTemporalWindowFor } from "@hypit/hypit/temporal";
+import { sealVisualTrack } from "@hypit/composition";
+import { htmlVisual } from "@hypit/html-program";
+import { assertTemporalWindowFor } from "@hypit/temporal";
 const styles = (o) => Object.entries(o).map(([name, value]) => ({ name, value }));
-export function scene(t, c, w, font, o, html, css, setup, events, entries, extra = {}) {
-  assertTemporalWindowFor(w, { subjectId: o.id, space: t });
+export function scene(t, within, w, font, o, html, css, setup, events, entries, extra = {}) {
+  assertTemporalWindowFor(w, { subjectId: o.id, timeline: t });
   const beats = Object.fromEntries(events.map((e) => [e.name, e.at.frame - w.span.startFrame]));
   const count = w.span.endFrameExclusive - w.span.startFrame;
   const backgrounds = [];
@@ -40,7 +40,7 @@ export function scene(t, c, w, font, o, html, css, setup, events, entries, extra
     };
     if (v.image) return { ...shared, kind: "image", artifact: v.image };
     const m = v.media,
-      src = m.timeline.frameRate,
+      src = m.frameDomain.frameRate,
       start = Math.max(0, v.start ?? 0),
       end = Math.min(count, v.end ?? count);
     if (!m.visual) throw Error(id + " requires prepared picture");
@@ -51,7 +51,7 @@ export function scene(t, c, w, font, o, html, css, setup, events, entries, extra
     if (
       !v.loop &&
       !v.holdLast &&
-      ((end - start - 1) * rate.numerator) / rate.denominator >= m.timeline.frameCount
+      ((end - start - 1) * rate.numerator) / rate.denominator >= m.frameDomain.frameCount
     )
       throw Error(id + " source is too short");
     return {
@@ -59,26 +59,26 @@ export function scene(t, c, w, font, o, html, css, setup, events, entries, extra
       kind: "video",
       artifact: m.visual.artifact,
       muted: true,
-      sampling: {
+      sourceTime: {
         sourceFrameRate: src,
-        sourceFrameCount: m.timeline.frameCount,
-        segments: v.holdLast
+        sourceFrameCount: m.frameDomain.frameCount,
+        pieces: v.holdLast
           ? (() => {
               const played = Math.min(
                   end - start,
-                  Math.ceil((m.timeline.frameCount * rate.denominator) / rate.numerator),
+                  Math.ceil((m.frameDomain.frameCount * rate.denominator) / rate.numerator),
                 ),
                 segments = [
                   {
                     target: { startFrame: start, endFrameExclusive: start + played },
-                    sourceFrame: { numerator: 0, denominator: 1 },
+                    sourceAtStart: { numerator: 0, denominator: 1 },
                     rate,
                   },
                 ];
               if (start + played < end)
                 segments.push({
                   target: { startFrame: start + played, endFrameExclusive: end },
-                  sourceFrame: { numerator: m.timeline.frameCount - 1, denominator: 1 },
+                  sourceAtStart: { numerator: m.frameDomain.frameCount - 1, denominator: 1 },
                   rate: { numerator: 0, denominator: 1 },
                 });
               return segments;
@@ -88,15 +88,15 @@ export function scene(t, c, w, font, o, html, css, setup, events, entries, extra
                 {
                   length: Math.ceil(
                     (end - start) /
-                      Math.floor((m.timeline.frameCount * rate.denominator) / rate.numerator),
+                      Math.floor((m.frameDomain.frameCount * rate.denominator) / rate.numerator),
                   ),
                 },
                 (_, i) => {
-                  const n = Math.floor((m.timeline.frameCount * rate.denominator) / rate.numerator),
+                  const n = Math.floor((m.frameDomain.frameCount * rate.denominator) / rate.numerator),
                     a = start + i * n;
                   return {
                     target: { startFrame: a, endFrameExclusive: Math.min(end, a + n) },
-                    sourceFrame: { numerator: 0, denominator: 1 },
+                    sourceAtStart: { numerator: 0, denominator: 1 },
                     rate,
                   };
                 },
@@ -104,7 +104,7 @@ export function scene(t, c, w, font, o, html, css, setup, events, entries, extra
             : [
                 {
                   target: { startFrame: start, endFrameExclusive: end },
-                  sourceFrame: { numerator: 0, denominator: 1 },
+                  sourceAtStart: { numerator: 0, denominator: 1 },
                   rate,
                 },
               ],
@@ -113,19 +113,20 @@ export function scene(t, c, w, font, o, html, css, setup, events, entries, extra
   });
   return sealVisualTrack({
     id: o.id,
-    programSpaceId: t.id,
+    timelineId: t.id,
     visualIr: "hypit.visual-ir@1",
     presents: [
       {
         id: o.id,
+        order: 0,
+        z: o.z,
         span: w.span,
-        stacking: { order: o.z, tieBreak: o.id },
         elements: [
           {
             id: "scene",
             kind: "program",
             order: 0,
-            program: browserProgram({
+            program: htmlVisual({
               html: backHtml + html + '<div class="font-resource">{{font}}</div>',
               css: base + css,
               data: {
@@ -142,9 +143,10 @@ export function scene(t, c, w, font, o, html, css, setup, events, entries, extra
             }),
             style: styles({
               position: "absolute",
-              inset: 0,
-              width: c.widthPx + "px",
-              height: c.heightPx + "px",
+              left: within.xPx + "px",
+              top: within.yPx + "px",
+              width: within.widthPx + "px",
+              height: within.heightPx + "px",
             }),
           },
           {

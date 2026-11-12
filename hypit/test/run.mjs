@@ -4,6 +4,7 @@ import { globSync } from "node:fs";
 import { join } from "node:path";
 
 const patterns = [
+  "scripts/test/*.test.mjs",
   "packages/*/test/**/*.test.ts",
   "services/*/test/**/*.test.ts",
   "test/**/*.test.ts",
@@ -30,7 +31,7 @@ const suites = {
     files: ["packages/provider-image-opencv-local/test/provider.test.ts"],
     env: {
       HYPIT_OPENCV_TESTS: "1",
-      HYPIT_OPENCV_PYTHON: managedPython("services/image-opencv"),
+      HYPIT_OPENCV_PYTHON: managedPython("packages/provider-image-opencv-local/runtime"),
     },
   },
 };

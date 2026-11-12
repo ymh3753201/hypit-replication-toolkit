@@ -4,15 +4,24 @@
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "hypit": { "activation": "./src/activation.ts" },
-  "dependencies": {
-    "@hypit/endpoint-kit": "workspace:*",
-    "@hypit/generation": "workspace:*",
-    "@hypit/minimax-h3": "workspace:*",
-    "@hypit/protocol": "workspace:*",
-    "@hypit/runtime": "workspace:*",
-    "@hypit/runtime-kit": "workspace:*"
+  "exports": {
+    ".": "./src/index.ts"
   },
-  "devDependencies": { "@hypit/driver-node": "workspace:*" }
+  "hypit": {
+    "activation": "./src/activation.ts"
+  },
+  "dependencies": {
+    "@hypit/generation": "workspace:*",
+    "@hypit/minimax-h3": "workspace:*"
+  },
+  "devDependencies": {
+    "@hypit/hypit": "workspace:*",
+    "@hypit/runtime-local": "workspace:*",
+    "@hypit/endpoint": "workspace:*",
+    "@hypit/runtime": "workspace:*"
+  },
+  "peerDependencies": {
+    "@hypit/hypit": "workspace:^0.3.1",
+    "@hypit/runtime-local": "workspace:^0.1.1"
+  }
 }

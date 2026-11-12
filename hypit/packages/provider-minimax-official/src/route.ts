@@ -1,8 +1,8 @@
 import { compileWireRequest, generationTypes, sealGeneratedVideoSet } from "@hypit/generation";
 import type { GenerationRequest, GenerationWireMapping } from "@hypit/generation";
-import { canonicalize } from "@hypit/protocol";
-import type { BlobRef, CanonicalValue } from "@hypit/protocol";
-import type { EndpointRequest, EndpointSupport } from "@hypit/endpoint-kit";
+import { canonicalize } from "@hypit/hypit/protocol";
+import type { BlobRef, CanonicalValue } from "@hypit/hypit/protocol";
+import type { EndpointRequest, EndpointSupport } from "@hypit/hypit/endpoint";
 
 const mapping: GenerationWireMapping = {
   capability: { module: { name: "@hypit/minimax-h3", version: "1" }, name: "minimax-h3" },

@@ -4,15 +4,20 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
 
-import { FileBuildResultRepository } from "@hypit/build-result";
-import { createRunFrontendHostFacet } from "@hypit/run";
+import { FileBuildResultRepository } from "@hypit/result/node";
+import { createRunFrontendFacet } from "@hypit/run";
+import { createProducerPackageFacet } from "@hypit/producer";
 
-import { runCli } from "../src/main.js";
+import { runCli as runCliEngine } from "../src/main.js";
 import { commandHint } from "../src/command-hint.js";
 import type { CliDistribution } from "../src/distribution.js";
-import type { RuntimeDoctorDiagnostic } from "@hypit/runtime-kit";
+import type { CliDiagnostic as RuntimeDoctorDiagnostic } from "../src/runtime-port.js";
 
 const io = { write: () => {} };
+const runCli: typeof runCliEngine = async (argv, output, selected) => await runCliEngine(argv, output, selected, {
+  cwd: tmpdir(),
+  resolveProjectRoot: async (explicit) => await realpath(explicit ?? tmpdir()),
+});
 
 /**
  * Enough of a Distribution to reach the build handler: a Run Frontend the
@@ -24,14 +29,15 @@ function distribution(
   diagnostics: readonly RuntimeDoctorDiagnostic[],
   authorSource = "./main.svml",
   execution?: object,
+  producerError?: string,
 ): CliDistribution {
   return {
     bootstrapPackages: [{
       specifier: "@example/run-frontend",
       contribution: {
-        format: "hypit.node-package@1",
-        hostFacets: [createRunFrontendHostFacet({
-        id: "@hypit/run-markup@1",
+        format: "hypit.package@1",
+        facets: [createRunFrontendFacet({
+        id: "@hypit/markup/run@1",
         discover: () => ({ author: { source: authorSource }, imports: [] }),
         decode: () => ({ document: {
           format: "hypit.run-document@1",
@@ -41,12 +47,20 @@ function distribution(
           candidates: [],
           satisfactions: [],
         } }),
-        })],
+        }), ...(producerError === undefined ? [] : [createProducerPackageFacet({
+          producers: [{
+            producer: { module: { name: "example.value", version: "1" }, name: "produce" },
+            handler() { throw new Error(producerError); },
+          }],
+        })])],
       },
     }],
     createCompiler: () => ({
-      openFile: async (path: string) => {
-        const source = async (name: string) => ({ id: name, name, text: await readFile(name, "utf8") });
+      openEntry: async (path: string) => {
+        const source = async (name: string) => ({
+          unit: { id: name, name, bytes: new TextEncoder().encode(await readFile(name, "utf8")) },
+          frontend: name.endsWith(".svrun") ? "@hypit/markup/run@1" : "@hypit/markup@1",
+        });
         return {
           entry: await source(path),
           resolveSource: async (_importer: unknown, request: { readonly from: string }) =>
@@ -55,8 +69,8 @@ function distribution(
         };
       },
       supportsFrontend: () => false,
-      compileSource: async (entry: { readonly id: string }) => ({
-        closure: { entry: entry.id, units: [] },
+      compileResolvedSource: async (entry: { readonly unit: { readonly id: string } }) => ({
+        closure: { entry: entry.unit.id, units: [] },
         provenance: { format: "hypit.author-provenance@1", elements: [] },
         program: { closure: { format: "hypit.closure@1", modules: [{ manifest: {
           format: "hypit.module@1",
@@ -65,7 +79,10 @@ function distribution(
           dependencies: [],
           types: [{ name: "Value" }],
           capabilities: [],
-          producers: [],
+          producers: producerError === undefined ? [] : [{
+            name: "produce", inputs: [], needs: [],
+            outputs: [{ name: "result", type: { module: { name: "example.value", version: "1" }, name: "Value" } }],
+          }],
         } }] }, records: [] },
         graph: {
           format: "hypit.graph@1",
@@ -77,12 +94,16 @@ function distribution(
           candidates: [{
             id: "provided-result",
             type: { module: { name: "example.value", version: "1" }, name: "Value" },
-            root: { kind: "value", value: {
+            root: producerError === undefined ? { kind: "value", value: {
               id: "record-result",
               value: { kind: "inline", value: "ready" },
-            } },
+            } } : { kind: "operation", result: { kind: "operation-result", operation: "produce-result" } },
           }],
-          operations: [],
+          operations: producerError === undefined ? [] : [{
+            id: "produce-result",
+            producer: { module: { name: "example.value", version: "1" }, name: "produce" },
+            inputs: {}, result: { kind: "output", name: "result", record: "record-result" },
+          }],
         },
         exports: [{
           name: "result",
@@ -104,6 +125,8 @@ function distribution(
     diagnoseProjectResults: async () => ({ diagnostics: [] }),
     openRuntimeHost: async (path: string) => ({
       profile: path,
+      ensureExecution: async () => ({ state: "running" as const }),
+      executionStatus: async () => ({ state: "running" as const }),
       resolvePaths: async () => ({}),
       controller: async () => ({
         profile: path,
@@ -126,6 +149,7 @@ function distribution(
       preflight: async () => ({ dataRoot: "/tmp", diagnostics }),
       doctor: async () => ({ dataRoot: "/tmp", diagnostics: [] }),
       providers: async () => [],
+      pricing: async () => [],
       invoke: async () => { throw new Error("creation-time invocation is not part of this test"); },
       createRuntime: async () => {
         if (execution !== undefined) return execution;
@@ -139,7 +163,7 @@ function distribution(
 async function runSource(): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), "hypit-build-programs-"));
   const path = join(root, "build.svrun");
-  await writeFile(path, '<?svml using="@hypit/run-markup@1"?>\n<svrun/>\n', "utf8");
+  await writeFile(path, '<?svml using="@hypit/markup/run@1"?>\n<svrun/>\n', "utf8");
   await writeFile(join(root, "main.svml"), "author", "utf8");
   return path;
 }
@@ -227,7 +251,7 @@ test("Build confirms durable submission before following stable work progress", 
   const projectRoot = await realpath(dirname(source));
   const runtimeProfile = resolve("/p/a selected runtime.json");
   await runCli([
-    "build", source, "--workspace", projectRoot, "--runtime", runtimeProfile,
+    "build", source, "--project", projectRoot, "--runtime", runtimeProfile,
     "--follow", "--max-wait-ms", "0", "--json",
   ], {
     write(text) { output += text; }, writeProgress(text) { progress += text; },
@@ -238,7 +262,7 @@ test("Build confirms durable submission before following stable work progress", 
 
   output = "";
   await runCli([
-    "build", source, "--workspace", projectRoot, "--runtime", runtimeProfile,
+    "build", source, "--project", projectRoot, "--runtime", runtimeProfile,
   ], { write(text) { output += text; } }, distribution(calls, [], "./main.svml", execution));
   const id = /Watch\s+hypit status (\S+)/u.exec(output)?.[1];
   assert.ok(id);
@@ -271,4 +295,30 @@ test("plan preserves the selected work summary but exits non-zero when cheap pre
   assert.equal(value.preflight.ok, false);
   assert.equal("steps" in value, false);
   assert.equal(exitCode, 1);
+});
+
+test("pricing reports a Producer failure with no external Need and exits non-zero in human and JSON modes", async () => {
+  const source = await runSource();
+  for (const json of [false, true]) {
+    for (const producerError of [undefined, "Timeline end must be after its start"]) {
+      let output = "";
+      let exitCode = 0;
+      await runCli([
+        "pricing", source, "--runtime", "/p/hypit.runtime.json", "--limit", "1",
+        ...(json ? ["--json"] : []),
+      ], {
+        write(text) { output += text; },
+        setExitCode(code) { exitCode = code; },
+      }, distribution([], [], "./main.svml", undefined, producerError));
+      assert.equal(exitCode, producerError === undefined ? 0 : 1);
+      if (producerError !== undefined) assert.ok(output.includes(producerError));
+      if (json) {
+        const value = JSON.parse(output);
+        assert.equal(value.requestCount, 0);
+        assert.deepEqual(value.groups, []);
+        assert.equal(value.producerFailureCount, producerError === undefined ? 0 : 1);
+        assert.equal(value.producerFailures.length, value.producerFailureCount);
+      }
+    }
+  }
 });
